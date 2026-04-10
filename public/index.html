@@ -566,27 +566,37 @@
         }
         
         function createPeerConnection() {
-            peerConnection = new RTCPeerConnection(configuration);
-            
-            peerConnection.ontrack = (event) => {
-                remoteVideo.srcObject = event.streams[0];
-            };
-            
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('ice candidate', {
-                        toId: currentCallWith,
-                        candidate: event.candidate
-                    });
-                }
-            };
-            
-            if (localStream) {
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-            }
+    peerConnection = new RTCPeerConnection(configuration);
+    
+    peerConnection.ontrack = (event) => {
+        console.log('Получен трек от собеседника');
+        remoteVideo.srcObject = event.streams[0];
+    };
+    
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            console.log('ICE кандидат отправлен');
+            socket.emit('ice candidate', {
+                toId: currentCallWith,
+                candidate: event.candidate
+            });
         }
+    };
+    
+    peerConnection.oniceconnectionstatechange = () => {
+        console.log('ICE состояние:', peerConnection.iceConnectionState);
+        if (peerConnection.iceConnectionState === 'failed') {
+            alert('Соединение не установлено. Попробуйте ещё раз.');
+            hangUp();
+        }
+    };
+    
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
+    }
+}
         
         socket.on('incoming call', async (data) => {
             if (isCallActive) {
