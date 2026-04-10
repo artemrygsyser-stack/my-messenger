@@ -437,22 +437,14 @@
         let pendingOffer = null;
         let pendingCallerId = null;
         
-                const configuration = {
+                        const configuration = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
                 {
-                    urls: 'turn:relay1.expressturn.com:3478',
-                    username: 'efFQXYVHMQCKATYXKZ',
-                    credential: 'sQ2WApLc6k47NsUy'
-                },
-                {
-                    urls: 'turn:relay2.expressturn.com:3478',
-                    username: 'efFQXYVHMQCKATYXKZ',
-                    credential: 'sQ2WApLc6k47NsUy'
+                    urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+                    username: 'anyfirewall',
+                    credential: 'anyfirewall'
                 }
             ]
         };
@@ -587,23 +579,35 @@
             }
         }
         
-                function createPeerConnection() {
+                        function createPeerConnection() {
             peerConnection = new RTCPeerConnection(configuration);
             
             console.log('PeerConnection создан');
             
             peerConnection.ontrack = (event) => {
                 console.log('✅ Получен трек от собеседника!', event.streams[0]);
-                remoteVideo.srcObject = event.streams[0];
-                // Если используем только аудио, скроем видео-элементы
-                document.querySelector('.video-box').style.display = 'none';
+                
+                // ВАЖНО: создаём новый Audio элемент для воспроизведения
+                const remoteAudio = new Audio();
+                remoteAudio.srcObject = event.streams[0];
+                remoteAudio.autoplay = true;
+                remoteAudio.play().catch(e => console.log('Автовоспроизведение заблокировано:', e));
+                
+                // Также пробуем через video элемент
+                if (remoteVideo) {
+                    remoteVideo.srcObject = event.streams[0];
+                    remoteVideo.play().catch(e => console.log('Video play error:', e));
+                }
+                
+                console.log('🎵 Аудио поток должен воспроизводиться');
             };
             
             peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
                     console.log('📡 Отправлен ICE кандидат');
+                    const targetId = typeof currentCallWith === 'string' ? currentCallWith : currentCallWith;
                     socket.emit('ice candidate', {
-                        toId: currentCallWith,
+                        toId: targetId,
                         candidate: event.candidate
                     });
                 }
@@ -620,6 +624,7 @@
                 }
             };
             
+            // Добавляем локальные треки
             if (localStream) {
                 localStream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, localStream);
@@ -640,12 +645,18 @@
             incomingCallDiv.style.display = 'flex';
         });
         
-         async function acceptCall() {
+                 async function acceptCall() {
             incomingCallDiv.style.display = 'none';
             
             try {
                 console.log('Принимаем звонок, запрашиваем микрофон...');
                 localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+                
+                // ПРИНУДИТЕЛЬНО ВКЛЮЧАЕМ ЗВУК
+                localStream.getAudioTracks().forEach(track => {
+                    track.enabled = true;
+                });
+                
                 console.log('Доступ к микрофону получен');
                 
                 if (localVideo) {
@@ -669,6 +680,11 @@
                 
                 callOverlay.style.display = 'flex';
                 document.getElementById('remote-label').textContent = 'Собеседник';
+                
+                // Дополнительно: пробуем воспроизвести локальный звук для теста
+                const testAudio = new Audio();
+                testAudio.srcObject = localStream;
+                testAudio.play().catch(e => console.log('Тестовое воспроизведение:', e));
                 
             } catch (err) {
                 console.error('Ошибка ответа на звонок:', err);
