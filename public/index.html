@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Облачный Мессенджер - Звонки</title>
+    <title>Мессенджер - Голосовые сообщения</title>
     <style>
         * {
             margin: 0;
@@ -86,23 +86,32 @@
             font-size: 10px;
         }
         
-        .call-btn {
-            background: #27ae60;
+        .voice-btn {
+            background: #e74c3c;
             border: none;
             color: white;
-            padding: 4px 10px;
-            border-radius: 15px;
+            padding: 8px 12px;
+            border-radius: 20px;
             cursor: pointer;
             font-size: 12px;
-            transition: background 0.3s;
+            transition: all 0.1s;
+            font-weight: bold;
         }
         
-        .call-btn:hover {
-            background: #2ecc71;
+        .voice-btn:active {
+            background: #c0392b;
+            transform: scale(0.95);
         }
         
-        .call-btn.in-call {
-            background: #e74c3c;
+        .voice-btn.recording {
+            background: #27ae60;
+            animation: pulse 0.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         
         .chat-main {
@@ -172,6 +181,21 @@
             font-size: 10px;
             color: #6c757d;
             margin-top: 4px;
+        }
+        
+        .voice-message {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        
+        .voice-message:hover {
+            background: #5a67d8;
         }
         
         .input-area {
@@ -248,126 +272,23 @@
             font-size: 16px;
         }
         
-        /* Видео звонок */
-        .call-overlay {
+        .recording-hint {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .video-container {
-            position: relative;
-            width: 90%;
-            max-width: 1200px;
-            height: 80%;
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        .video-box {
-            position: relative;
-            flex: 1;
-            min-width: 300px;
-            background: #000;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        
-        .video-box video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .video-label {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.6);
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
             color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
-        }
-        
-        .call-controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 20px;
-        }
-        
-        .call-controls button {
-            padding: 15px 30px;
-            font-size: 16px;
-            border: none;
+            padding: 10px 20px;
             border-radius: 50px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        .call-controls button:hover {
-            transform: scale(1.05);
-        }
-        
-        .end-call-btn {
-            background: #e74c3c;
-            color: white;
-        }
-        
-        .toggle-mic-btn, .toggle-video-btn {
-            background: #34495e;
-            color: white;
-        }
-        
-        .incoming-call {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #2c3e50;
-            color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            z-index: 1500;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        }
-        
-        .incoming-call button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        
-        .accept-call {
-            background: #27ae60;
-            color: white;
-        }
-        
-        .reject-call {
-            background: #e74c3c;
-            color: white;
+            z-index: 2000;
+            font-size: 14px;
+            animation: pulse 0.5s infinite;
         }
         
         @media (max-width: 768px) {
             .sidebar {
                 width: 200px;
-            }
-            
-            .video-box {
-                min-width: 250px;
             }
         }
     </style>
@@ -402,49 +323,17 @@
         </div>
     </div>
     
-    <div id="call-overlay" class="call-overlay" style="display: none;">
-        <div class="video-container" id="video-container">
-            <div class="video-box">
-                <video id="local-video" autoplay muted playsinline></video>
-                <div class="video-label">Вы</div>
-            </div>
-            <div class="video-box">
-                <video id="remote-video" autoplay playsinline></video>
-                <div class="video-label" id="remote-label">Собеседник</div>
-            </div>
-        </div>
-        <div class="call-controls">
-            <button class="toggle-mic-btn" onclick="toggleMic()">🎤 Выкл микрофон</button>
-            <button class="toggle-video-btn" onclick="toggleVideo()">📹 Выкл камеру</button>
-            <button class="end-call-btn" onclick="hangUp()">🔴 Завершить</button>
-        </div>
+    <div id="recording-hint" class="recording-hint" style="display: none;">
+        🎙️ Запись... Отпустите кнопку для отправки
     </div>
     
-    <div id="incoming-call" class="incoming-call" style="display: none;">
-        <span>📞 Входящий звонок от <span id="caller-name"></span></span>
-        <button class="accept-call" onclick="acceptCall()">Ответить</button>
-        <button class="reject-call" onclick="rejectCall()">Отклонить</button>
-    </div>
-    
-  <script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         let currentUser = null;
-        let localStream = null;
-        let peerConnection = null;
-        let currentCallWith = null;
-        let isCallActive = false;
-        let pendingOffer = null;
-        let pendingCallerId = null;
-        let pendingCallerName = null;
-        
-        const configuration = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' }
-            ]
-        };
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let currentRecordingTarget = null;
         
         // DOM элементы
         const loginOverlay = document.getElementById('login-overlay');
@@ -454,11 +343,7 @@
         const messageInput = document.getElementById('message-input');
         const sendBtn = document.getElementById('send-btn');
         const onlineCountSpan = document.getElementById('online-count');
-        const callOverlay = document.getElementById('call-overlay');
-        const localVideo = document.getElementById('local-video');
-        const remoteVideo = document.getElementById('remote-video');
-        const incomingCallDiv = document.getElementById('incoming-call');
-        const callerNameSpan = document.getElementById('caller-name');
+        const recordingHint = document.getElementById('recording-hint');
         
         // Проверяем сохранённое имя
         const savedName = localStorage.getItem('messenger_username');
@@ -482,13 +367,24 @@
             socket.emit('user join', currentUser);
         }
         
-        function addMessage(data, isSystem = false) {
+        function addMessage(data, isSystem = false, isVoice = false, voiceUrl = null) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
             
             if (isSystem) {
                 messageDiv.className = 'message system';
                 messageDiv.innerHTML = `<div class="message-bubble">${data}</div>`;
+            } else if (isVoice) {
+                const isCurrentUser = data.username === currentUser;
+                messageDiv.innerHTML = `
+                    <div class="message-bubble" style="${isCurrentUser ? 'background: #667eea; color: white; margin-left: auto;' : 'background: white;'}">
+                        ${!isCurrentUser ? `<div class="message-username">${data.username}</div>` : ''}
+                        <div class="voice-message" onclick="playAudio('${voiceUrl}')">
+                            🔊 Голосовое сообщение (${Math.round(data.duration)} сек)
+                        </div>
+                        <div class="message-time">${data.time}</div>
+                    </div>
+                `;
             } else {
                 const isCurrentUser = data.username === currentUser;
                 messageDiv.innerHTML = `
@@ -510,6 +406,11 @@
             return div.innerHTML;
         }
         
+        function playAudio(url) {
+            const audio = new Audio(url);
+            audio.play();
+        }
+        
         function updateUsersList(users) {
             usersList.innerHTML = '';
             onlineCountSpan.textContent = `${users.length} человек`;
@@ -520,7 +421,14 @@
                     userDiv.className = 'user-item';
                     userDiv.innerHTML = `
                         <div class="user-name">${user}</div>
-                        <button class="call-btn" onclick="startCall('${user}')">📞</button>
+                        <button class="voice-btn" 
+                            onmousedown="startRecording('${user}')" 
+                            onmouseup="stopRecording()"
+                            onmouseleave="stopRecording()"
+                            ontouchstart="startRecording('${user}')"
+                            ontouchend="stopRecording()">
+                            🎤 Говорить
+                        </button>
                     `;
                     usersList.appendChild(userDiv);
                 } else {
@@ -532,194 +440,98 @@
             });
         }
         
-        // ========== ЗВОНКИ ==========
+        // ========== ГОЛОСОВЫЕ СООБЩЕНИЯ (РАЦИЯ) ==========
         
-        async function startCall(targetUsername) {
-            if (isCallActive) {
-                alert('У вас уже активен звонок');
-                return;
-            }
+        async function startRecording(targetUser) {
+            if (currentRecordingTarget) return;
             
             try {
-                // Получаем доступ только к микрофону
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log('Микрофон получен');
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                currentRecordingTarget = targetUser;
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
                 
-                createPeerConnection();
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
                 
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        const base64Audio = reader.result;
+                        const duration = audioChunks.reduce((acc, chunk) => acc + chunk.size, 0) / 16000;
+                        
+                        // Отправляем голосовое сообщение
+                        socket.emit('voice message', {
+                            to: targetUser,
+                            from: currentUser,
+                            audio: base64Audio,
+                            duration: duration
+                        });
+                        
+                        addMessage({
+                            username: currentUser,
+                            message: 'Голосовое сообщение отправлено',
+                            time: new Date().toLocaleTimeString()
+                        });
+                    };
+                    
+                    // Останавливаем все треки микрофона
+                    stream.getTracks().forEach(track => track.stop());
+                    currentRecordingTarget = null;
+                    recordingHint.style.display = 'none';
+                };
                 
-                currentCallWith = targetUsername;
-                isCallActive = true;
-                
-                socket.emit('call user', {
-                    targetUsername: targetUsername,
-                    callerUsername: currentUser,
-                    offer: offer
-                });
-                
-                callOverlay.style.display = 'flex';
-                
-            } catch (err) {
-                console.error('Ошибка:', err);
-                alert('Не удалось получить доступ к микрофону');
-            }
-        }
-        
-        function createPeerConnection() {
-            peerConnection = new RTCPeerConnection(configuration);
-            
-            peerConnection.ontrack = (event) => {
-                console.log('Получен аудио поток от собеседника');
-                // Воспроизводим аудио собеседника
-                const audio = new Audio();
-                audio.srcObject = event.streams[0];
-                audio.autoplay = true;
-                audio.play();
-            };
-            
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('ice candidate', {
-                        toId: currentCallWith,
-                        candidate: event.candidate
-                    });
-                }
-            };
-            
-            peerConnection.oniceconnectionstatechange = () => {
-                console.log('ICE состояние:', peerConnection.iceConnectionState);
-                if (peerConnection.iceConnectionState === 'connected') {
-                    console.log('Звонок установлен!');
-                } else if (peerConnection.iceConnectionState === 'failed') {
-                    hangUp();
-                }
-            };
-            
-            // Добавляем локальный аудио поток
-            if (localStream) {
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-            }
-        }
-        
-        socket.on('incoming call', async (data) => {
-            if (isCallActive) {
-                socket.emit('reject call', { toId: data.fromId });
-                return;
-            }
-            
-            pendingCallerId = data.fromId;
-            pendingOffer = data.offer;
-            pendingCallerName = data.from;
-            callerNameSpan.textContent = data.from;
-            incomingCallDiv.style.display = 'flex';
-        });
-        
-        async function acceptCall() {
-            incomingCallDiv.style.display = 'none';
-            
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log('Микрофон получен для ответа');
-                
-                createPeerConnection();
-                
-                await peerConnection.setRemoteDescription(pendingOffer);
-                
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                
-                currentCallWith = pendingCallerId;
-                isCallActive = true;
-                
-                socket.emit('answer call', {
-                    toId: pendingCallerId,
-                    answer: answer
-                });
-                
-                callOverlay.style.display = 'flex';
+                mediaRecorder.start();
+                recordingHint.style.display = 'flex';
                 
             } catch (err) {
-                console.error('Ошибка ответа:', err);
+                console.error('Ошибка доступа к микрофону:', err);
                 alert('Не удалось получить доступ к микрофону');
+                currentRecordingTarget = null;
             }
         }
         
-        function rejectCall() {
-            socket.emit('reject call', { toId: pendingCallerId });
-            incomingCallDiv.style.display = 'none';
-            pendingCallerId = null;
-            pendingOffer = null;
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
         }
         
-        socket.on('call answered', async (data) => {
-            if (peerConnection) {
-                await peerConnection.setRemoteDescription(data.answer);
+        // Получение голосового сообщения
+        socket.on('voice message', (data) => {
+            if (data.from !== currentUser) {
+                // Создаём аудио URL из base64
+                const audioUrl = data.audio;
+                addMessage({
+                    username: data.from,
+                    message: 'Голосовое сообщение',
+                    time: new Date().toLocaleTimeString(),
+                    duration: data.duration
+                }, false, true, audioUrl);
+                
+                // Воспроизводим автоматически (опционально)
+                // playAudio(audioUrl);
             }
         });
-        
-        socket.on('ice candidate', async (data) => {
-            if (peerConnection) {
-                try {
-                    await peerConnection.addIceCandidate(data.candidate);
-                } catch (e) {
-                    console.log('ICE кандидат не добавлен:', e);
-                }
-            }
-        });
-        
-        socket.on('call ended', () => {
-            hangUp();
-        });
-        
-        socket.on('call rejected', () => {
-            alert('Звонок отклонён');
-            hangUp();
-        });
-        
-        function hangUp() {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-            
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
-            }
-            
-            if (isCallActive && currentCallWith) {
-                socket.emit('end call', { toId: currentCallWith });
-            }
-            
-            callOverlay.style.display = 'none';
-            isCallActive = false;
-            currentCallWith = null;
-        }
-        
-        function toggleMic() {
-            if (localStream) {
-                const audioTrack = localStream.getAudioTracks()[0];
-                if (audioTrack) {
-                    audioTrack.enabled = !audioTrack.enabled;
-                    document.querySelector('.toggle-mic-btn').textContent = audioTrack.enabled ? '🎤 Выкл микрофон' : '🎙️ Вкл микрофон';
-                }
-            }
-        }
-        
-        function toggleVideo() {
-            // Видео отключено, используем только аудио
-            alert('Видеозвонки пока не поддерживаются');
-        }
         
         // ========== ЧАТ ==========
         
         socket.on('chat history', (messages) => {
             messagesArea.innerHTML = '';
-            messages.forEach(msg => addMessage(msg));
+            messages.forEach(msg => {
+                if (msg.message && msg.message.startsWith('data:audio')) {
+                    addMessage({
+                        username: msg.username,
+                        time: msg.time,
+                        duration: 3
+                    }, false, true, msg.message);
+                } else {
+                    addMessage(msg);
+                }
+            });
         });
         
         socket.on('chat message', (data) => {
@@ -771,15 +583,6 @@
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 100) + 'px';
         });
-        
-        // Если имя сохранено, можно сразу войти
-        if (savedName) {
-            setTimeout(() => {
-                if (currentUser === null && savedName) {
-                    document.getElementById('login-name').value = savedName;
-                }
-            }, 100);
-        }
     </script>
 </body>
 </html>
