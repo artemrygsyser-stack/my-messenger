@@ -7,7 +7,13 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// Показываем папку public
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Если кто-то заходит на главную страницу
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 const connectedUsers = new Map();
 const messageHistory = [];
@@ -69,7 +75,7 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Мессенджер запущен на порту ${PORT}`);
   console.log(`🌐 Открой: http://localhost:${PORT}`);
 });
