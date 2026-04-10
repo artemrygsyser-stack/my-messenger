@@ -426,7 +426,7 @@
         <button class="reject-call" onclick="rejectCall()">Отклонить</button>
     </div>
     
-    <script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         let currentUser = null;
@@ -436,16 +436,13 @@
         let isCallActive = false;
         let pendingOffer = null;
         let pendingCallerId = null;
+        let pendingCallerName = null;
         
-                        const configuration = {
+        const configuration = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
-                {
-                    urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
-                    username: 'anyfirewall',
-                    credential: 'anyfirewall'
-                }
+                { urls: 'stun:stun2.l.google.com:19302' }
             ]
         };
         
@@ -463,7 +460,7 @@
         const incomingCallDiv = document.getElementById('incoming-call');
         const callerNameSpan = document.getElementById('caller-name');
         
-        // Проверяем, есть ли сохранённое имя
+        // Проверяем сохранённое имя
         const savedName = localStorage.getItem('messenger_username');
         if (savedName) {
             document.getElementById('login-name').value = savedName;
@@ -477,7 +474,6 @@
             }
             
             currentUser = name;
-            // Сохраняем имя в localStorage
             localStorage.setItem('messenger_username', currentUser);
             
             loginOverlay.style.display = 'none';
@@ -538,22 +534,16 @@
         
         // ========== ЗВОНКИ ==========
         
-                async function startCall(targetUsername) {
+        async function startCall(targetUsername) {
             if (isCallActive) {
                 alert('У вас уже активен звонок');
                 return;
             }
             
             try {
-                console.log('Запрашиваем доступ к медиа...');
-                // Запрашиваем только аудио для начала (так проще)
-                localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-                console.log('Доступ к микрофону получен');
-                
-                // Показываем локальное видео (если нужно - добавим позже)
-                if (localVideo) {
-                    localVideo.srcObject = localStream;
-                }
+                // Получаем доступ только к микрофону
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('Микрофон получен');
                 
                 createPeerConnection();
                 
@@ -563,7 +553,6 @@
                 currentCallWith = targetUsername;
                 isCallActive = true;
                 
-                console.log('Отправляем звонок пользователю:', targetUsername);
                 socket.emit('call user', {
                     targetUsername: targetUsername,
                     callerUsername: currentUser,
@@ -571,64 +560,47 @@
                 });
                 
                 callOverlay.style.display = 'flex';
-                document.getElementById('remote-label').textContent = targetUsername;
                 
             } catch (err) {
-                console.error('Ошибка доступа к микрофону:', err);
-                alert('Не удалось получить доступ к микрофону. Проверьте разрешения в браузере.');
+                console.error('Ошибка:', err);
+                alert('Не удалось получить доступ к микрофону');
             }
         }
         
-                        function createPeerConnection() {
+        function createPeerConnection() {
             peerConnection = new RTCPeerConnection(configuration);
             
-            console.log('PeerConnection создан');
-            
             peerConnection.ontrack = (event) => {
-                console.log('✅ Получен трек от собеседника!', event.streams[0]);
-                
-                // ВАЖНО: создаём новый Audio элемент для воспроизведения
-                const remoteAudio = new Audio();
-                remoteAudio.srcObject = event.streams[0];
-                remoteAudio.autoplay = true;
-                remoteAudio.play().catch(e => console.log('Автовоспроизведение заблокировано:', e));
-                
-                // Также пробуем через video элемент
-                if (remoteVideo) {
-                    remoteVideo.srcObject = event.streams[0];
-                    remoteVideo.play().catch(e => console.log('Video play error:', e));
-                }
-                
-                console.log('🎵 Аудио поток должен воспроизводиться');
+                console.log('Получен аудио поток от собеседника');
+                // Воспроизводим аудио собеседника
+                const audio = new Audio();
+                audio.srcObject = event.streams[0];
+                audio.autoplay = true;
+                audio.play();
             };
             
             peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
-                    console.log('📡 Отправлен ICE кандидат');
-                    const targetId = typeof currentCallWith === 'string' ? currentCallWith : currentCallWith;
                     socket.emit('ice candidate', {
-                        toId: targetId,
+                        toId: currentCallWith,
                         candidate: event.candidate
                     });
                 }
             };
             
             peerConnection.oniceconnectionstatechange = () => {
-                console.log('🔌 ICE состояние:', peerConnection.iceConnectionState);
+                console.log('ICE состояние:', peerConnection.iceConnectionState);
                 if (peerConnection.iceConnectionState === 'connected') {
-                    console.log('✅ Звонок установлен!');
+                    console.log('Звонок установлен!');
                 } else if (peerConnection.iceConnectionState === 'failed') {
-                    console.log('❌ ICE соединение не установлено');
-                    alert('Не удалось установить соединение. Проверьте интернет.');
                     hangUp();
                 }
             };
             
-            // Добавляем локальные треки
+            // Добавляем локальный аудио поток
             if (localStream) {
                 localStream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, localStream);
-                    console.log('➕ Добавлен трек:', track.kind);
                 });
             }
         }
@@ -641,27 +613,17 @@
             
             pendingCallerId = data.fromId;
             pendingOffer = data.offer;
+            pendingCallerName = data.from;
             callerNameSpan.textContent = data.from;
             incomingCallDiv.style.display = 'flex';
         });
         
-                 async function acceptCall() {
+        async function acceptCall() {
             incomingCallDiv.style.display = 'none';
             
             try {
-                console.log('Принимаем звонок, запрашиваем микрофон...');
-                localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-                
-                // ПРИНУДИТЕЛЬНО ВКЛЮЧАЕМ ЗВУК
-                localStream.getAudioTracks().forEach(track => {
-                    track.enabled = true;
-                });
-                
-                console.log('Доступ к микрофону получен');
-                
-                if (localVideo) {
-                    localVideo.srcObject = localStream;
-                }
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('Микрофон получен для ответа');
                 
                 createPeerConnection();
                 
@@ -679,15 +641,9 @@
                 });
                 
                 callOverlay.style.display = 'flex';
-                document.getElementById('remote-label').textContent = 'Собеседник';
-                
-                // Дополнительно: пробуем воспроизвести локальный звук для теста
-                const testAudio = new Audio();
-                testAudio.srcObject = localStream;
-                testAudio.play().catch(e => console.log('Тестовое воспроизведение:', e));
                 
             } catch (err) {
-                console.error('Ошибка ответа на звонок:', err);
+                console.error('Ошибка ответа:', err);
                 alert('Не удалось получить доступ к микрофону');
             }
         }
@@ -700,12 +656,18 @@
         }
         
         socket.on('call answered', async (data) => {
-            await peerConnection.setRemoteDescription(data.answer);
+            if (peerConnection) {
+                await peerConnection.setRemoteDescription(data.answer);
+            }
         });
         
         socket.on('ice candidate', async (data) => {
             if (peerConnection) {
-                await peerConnection.addIceCandidate(data.candidate);
+                try {
+                    await peerConnection.addIceCandidate(data.candidate);
+                } catch (e) {
+                    console.log('ICE кандидат не добавлен:', e);
+                }
             }
         });
         
@@ -736,8 +698,6 @@
             callOverlay.style.display = 'none';
             isCallActive = false;
             currentCallWith = null;
-            localVideo.srcObject = null;
-            remoteVideo.srcObject = null;
         }
         
         function toggleMic() {
@@ -751,13 +711,8 @@
         }
         
         function toggleVideo() {
-            if (localStream) {
-                const videoTrack = localStream.getVideoTracks()[0];
-                if (videoTrack) {
-                    videoTrack.enabled = !videoTrack.enabled;
-                    document.querySelector('.toggle-video-btn').textContent = videoTrack.enabled ? '📹 Выкл камеру' : '📹 Вкл камеру';
-                }
-            }
+            // Видео отключено, используем только аудио
+            alert('Видеозвонки пока не поддерживаются');
         }
         
         // ========== ЧАТ ==========
