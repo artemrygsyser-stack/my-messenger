@@ -437,10 +437,23 @@
         let pendingOffer = null;
         let pendingCallerId = null;
         
-        const configuration = {
+                const configuration = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                {
+                    urls: 'turn:relay1.expressturn.com:3478',
+                    username: 'efFQXYVHMQCKATYXKZ',
+                    credential: 'sQ2WApLc6k47NsUy'
+                },
+                {
+                    urls: 'turn:relay2.expressturn.com:3478',
+                    username: 'efFQXYVHMQCKATYXKZ',
+                    credential: 'sQ2WApLc6k47NsUy'
+                }
             ]
         };
         
@@ -533,15 +546,22 @@
         
         // ========== ЗВОНКИ ==========
         
-        async function startCall(targetUsername) {
+                async function startCall(targetUsername) {
             if (isCallActive) {
                 alert('У вас уже активен звонок');
                 return;
             }
             
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                localVideo.srcObject = localStream;
+                console.log('Запрашиваем доступ к медиа...');
+                // Запрашиваем только аудио для начала (так проще)
+                localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+                console.log('Доступ к микрофону получен');
+                
+                // Показываем локальное видео (если нужно - добавим позже)
+                if (localVideo) {
+                    localVideo.srcObject = localStream;
+                }
                 
                 createPeerConnection();
                 
@@ -551,6 +571,7 @@
                 currentCallWith = targetUsername;
                 isCallActive = true;
                 
+                console.log('Отправляем звонок пользователю:', targetUsername);
                 socket.emit('call user', {
                     targetUsername: targetUsername,
                     callerUsername: currentUser,
@@ -558,45 +579,54 @@
                 });
                 
                 callOverlay.style.display = 'flex';
+                document.getElementById('remote-label').textContent = targetUsername;
                 
             } catch (err) {
-                console.error('Ошибка доступа к камере/микрофону:', err);
-                alert('Не удалось получить доступ к камере или микрофону');
+                console.error('Ошибка доступа к микрофону:', err);
+                alert('Не удалось получить доступ к микрофону. Проверьте разрешения в браузере.');
             }
         }
         
-        function createPeerConnection() {
-    peerConnection = new RTCPeerConnection(configuration);
-    
-    peerConnection.ontrack = (event) => {
-        console.log('Получен трек от собеседника');
-        remoteVideo.srcObject = event.streams[0];
-    };
-    
-    peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-            console.log('ICE кандидат отправлен');
-            socket.emit('ice candidate', {
-                toId: currentCallWith,
-                candidate: event.candidate
-            });
+                function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(configuration);
+            
+            console.log('PeerConnection создан');
+            
+            peerConnection.ontrack = (event) => {
+                console.log('✅ Получен трек от собеседника!', event.streams[0]);
+                remoteVideo.srcObject = event.streams[0];
+                // Если используем только аудио, скроем видео-элементы
+                document.querySelector('.video-box').style.display = 'none';
+            };
+            
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('📡 Отправлен ICE кандидат');
+                    socket.emit('ice candidate', {
+                        toId: currentCallWith,
+                        candidate: event.candidate
+                    });
+                }
+            };
+            
+            peerConnection.oniceconnectionstatechange = () => {
+                console.log('🔌 ICE состояние:', peerConnection.iceConnectionState);
+                if (peerConnection.iceConnectionState === 'connected') {
+                    console.log('✅ Звонок установлен!');
+                } else if (peerConnection.iceConnectionState === 'failed') {
+                    console.log('❌ ICE соединение не установлено');
+                    alert('Не удалось установить соединение. Проверьте интернет.');
+                    hangUp();
+                }
+            };
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                    console.log('➕ Добавлен трек:', track.kind);
+                });
+            }
         }
-    };
-    
-    peerConnection.oniceconnectionstatechange = () => {
-        console.log('ICE состояние:', peerConnection.iceConnectionState);
-        if (peerConnection.iceConnectionState === 'failed') {
-            alert('Соединение не установлено. Попробуйте ещё раз.');
-            hangUp();
-        }
-    };
-    
-    if (localStream) {
-        localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, localStream);
-        });
-    }
-}
         
         socket.on('incoming call', async (data) => {
             if (isCallActive) {
@@ -610,12 +640,17 @@
             incomingCallDiv.style.display = 'flex';
         });
         
-        async function acceptCall() {
+         async function acceptCall() {
             incomingCallDiv.style.display = 'none';
             
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                localVideo.srcObject = localStream;
+                console.log('Принимаем звонок, запрашиваем микрофон...');
+                localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+                console.log('Доступ к микрофону получен');
+                
+                if (localVideo) {
+                    localVideo.srcObject = localStream;
+                }
                 
                 createPeerConnection();
                 
@@ -633,9 +668,11 @@
                 });
                 
                 callOverlay.style.display = 'flex';
+                document.getElementById('remote-label').textContent = 'Собеседник';
                 
             } catch (err) {
                 console.error('Ошибка ответа на звонок:', err);
+                alert('Не удалось получить доступ к микрофону');
             }
         }
         
