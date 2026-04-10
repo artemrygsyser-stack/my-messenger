@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Облачный Мессенджер</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Облачный Мессенджер - Звонки</title>
     <style>
         * {
             margin: 0;
@@ -22,7 +22,7 @@
         
         .chat-container {
             width: 90%;
-            max-width: 1200px;
+            max-width: 1400px;
             height: 90vh;
             background: white;
             border-radius: 20px;
@@ -69,13 +69,40 @@
             font-size: 14px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 8px;
         }
         
-        .user-item::before {
+        .user-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+        
+        .user-name::before {
             content: "●";
             color: #2ecc71;
             font-size: 10px;
+        }
+        
+        .call-btn {
+            background: #27ae60;
+            border: none;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+        
+        .call-btn:hover {
+            background: #2ecc71;
+        }
+        
+        .call-btn.in-call {
+            background: #e74c3c;
         }
         
         .chat-main {
@@ -88,6 +115,9 @@
             padding: 20px;
             background: #f8f9fa;
             border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .chat-header h2 {
@@ -150,14 +180,6 @@
             border-top: 1px solid #dee2e6;
             display: flex;
             gap: 10px;
-        }
-        
-        #username-input {
-            width: 150px;
-            padding: 12px;
-            border: 1px solid #dee2e6;
-            border-radius: 25px;
-            font-size: 14px;
         }
         
         #message-input {
@@ -226,15 +248,132 @@
             font-size: 16px;
         }
         
+        /* Видео звонок */
+        .call-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 90%;
+            max-width: 1200px;
+            height: 80%;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .video-box {
+            position: relative;
+            flex: 1;
+            min-width: 300px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .video-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-label {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .call-controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .call-controls button {
+            padding: 15px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .call-controls button:hover {
+            transform: scale(1.05);
+        }
+        
+        .end-call-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .toggle-mic-btn, .toggle-video-btn {
+            background: #34495e;
+            color: white;
+        }
+        
+        .incoming-call {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            z-index: 1500;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        
+        .incoming-call button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .accept-call {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .reject-call {
+            background: #e74c3c;
+            color: white;
+        }
+        
         @media (max-width: 768px) {
             .sidebar {
-                display: none;
+                width: 200px;
+            }
+            
+            .video-box {
+                min-width: 250px;
             }
         }
     </style>
 </head>
 <body>
-    <div id="login-overlay" class="login-overlay">
+    <div id="login-overlay" class="login-overlay" style="display: flex;">
         <div class="login-box">
             <h2>Добро пожаловать!</h2>
             <input type="text" id="login-name" placeholder="Введите ваше имя" maxlength="20">
@@ -257,26 +396,73 @@
             </div>
             <div class="messages-area" id="messages-area"></div>
             <div class="input-area">
-                <input type="text" id="username-display" readonly style="background:#f8f9fa; width:120px;">
                 <textarea id="message-input" placeholder="Введите сообщение..." rows="1"></textarea>
                 <button id="send-btn">Отправить</button>
             </div>
         </div>
     </div>
     
+    <div id="call-overlay" class="call-overlay" style="display: none;">
+        <div class="video-container" id="video-container">
+            <div class="video-box">
+                <video id="local-video" autoplay muted playsinline></video>
+                <div class="video-label">Вы</div>
+            </div>
+            <div class="video-box">
+                <video id="remote-video" autoplay playsinline></video>
+                <div class="video-label" id="remote-label">Собеседник</div>
+            </div>
+        </div>
+        <div class="call-controls">
+            <button class="toggle-mic-btn" onclick="toggleMic()">🎤 Выкл микрофон</button>
+            <button class="toggle-video-btn" onclick="toggleVideo()">📹 Выкл камеру</button>
+            <button class="end-call-btn" onclick="hangUp()">🔴 Завершить</button>
+        </div>
+    </div>
+    
+    <div id="incoming-call" class="incoming-call" style="display: none;">
+        <span>📞 Входящий звонок от <span id="caller-name"></span></span>
+        <button class="accept-call" onclick="acceptCall()">Ответить</button>
+        <button class="reject-call" onclick="rejectCall()">Отклонить</button>
+    </div>
+    
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         let currentUser = null;
+        let localStream = null;
+        let peerConnection = null;
+        let currentCallWith = null;
+        let isCallActive = false;
+        let pendingOffer = null;
+        let pendingCallerId = null;
         
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+        
+        // DOM элементы
         const loginOverlay = document.getElementById('login-overlay');
         const chatContainer = document.getElementById('chat-container');
         const messagesArea = document.getElementById('messages-area');
         const usersList = document.getElementById('users-list');
         const messageInput = document.getElementById('message-input');
         const sendBtn = document.getElementById('send-btn');
-        const usernameDisplay = document.getElementById('username-display');
         const onlineCountSpan = document.getElementById('online-count');
+        const callOverlay = document.getElementById('call-overlay');
+        const localVideo = document.getElementById('local-video');
+        const remoteVideo = document.getElementById('remote-video');
+        const incomingCallDiv = document.getElementById('incoming-call');
+        const callerNameSpan = document.getElementById('caller-name');
+        
+        // Проверяем, есть ли сохранённое имя
+        const savedName = localStorage.getItem('messenger_username');
+        if (savedName) {
+            document.getElementById('login-name').value = savedName;
+        }
         
         function joinChat() {
             const name = document.getElementById('login-name').value.trim();
@@ -286,7 +472,9 @@
             }
             
             currentUser = name;
-            usernameDisplay.value = currentUser;
+            // Сохраняем имя в localStorage
+            localStorage.setItem('messenger_username', currentUser);
+            
             loginOverlay.style.display = 'none';
             chatContainer.style.display = 'flex';
             
@@ -299,18 +487,14 @@
             
             if (isSystem) {
                 messageDiv.className = 'message system';
-                messageDiv.innerHTML = `
-                    <div class="message-bubble">
-                        ${data}
-                    </div>
-                `;
+                messageDiv.innerHTML = `<div class="message-bubble">${data}</div>`;
             } else {
                 const isCurrentUser = data.username === currentUser;
                 messageDiv.innerHTML = `
                     <div class="message-bubble" style="${isCurrentUser ? 'background: #667eea; color: white; margin-left: auto;' : 'background: white;'}">
                         ${!isCurrentUser ? `<div class="message-username">${data.username}</div>` : ''}
                         <div class="message-text">${escapeHtml(data.message)}</div>
-                        <div class="message-time" style="${isCurrentUser ? 'color: rgba(255,255,255,0.8);' : ''}">${data.time}</div>
+                        <div class="message-time">${data.time}</div>
                     </div>
                 `;
             }
@@ -330,18 +514,194 @@
             onlineCountSpan.textContent = `${users.length} человек`;
             
             users.forEach(user => {
-                const userDiv = document.createElement('div');
-                userDiv.className = 'user-item';
-                userDiv.textContent = user;
-                usersList.appendChild(userDiv);
+                if (user !== currentUser) {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'user-item';
+                    userDiv.innerHTML = `
+                        <div class="user-name">${user}</div>
+                        <button class="call-btn" onclick="startCall('${user}')">📞</button>
+                    `;
+                    usersList.appendChild(userDiv);
+                } else {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'user-item';
+                    userDiv.innerHTML = `<div class="user-name">${user} (Вы)</div>`;
+                    usersList.appendChild(userDiv);
+                }
             });
         }
         
+        // ========== ЗВОНКИ ==========
+        
+        async function startCall(targetUsername) {
+            if (isCallActive) {
+                alert('У вас уже активен звонок');
+                return;
+            }
+            
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                localVideo.srcObject = localStream;
+                
+                createPeerConnection();
+                
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                currentCallWith = targetUsername;
+                isCallActive = true;
+                
+                socket.emit('call user', {
+                    targetUsername: targetUsername,
+                    callerUsername: currentUser,
+                    offer: offer
+                });
+                
+                callOverlay.style.display = 'flex';
+                
+            } catch (err) {
+                console.error('Ошибка доступа к камере/микрофону:', err);
+                alert('Не удалось получить доступ к камере или микрофону');
+            }
+        }
+        
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(configuration);
+            
+            peerConnection.ontrack = (event) => {
+                remoteVideo.srcObject = event.streams[0];
+            };
+            
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('ice candidate', {
+                        toId: currentCallWith,
+                        candidate: event.candidate
+                    });
+                }
+            };
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            }
+        }
+        
+        socket.on('incoming call', async (data) => {
+            if (isCallActive) {
+                socket.emit('reject call', { toId: data.fromId });
+                return;
+            }
+            
+            pendingCallerId = data.fromId;
+            pendingOffer = data.offer;
+            callerNameSpan.textContent = data.from;
+            incomingCallDiv.style.display = 'flex';
+        });
+        
+        async function acceptCall() {
+            incomingCallDiv.style.display = 'none';
+            
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                localVideo.srcObject = localStream;
+                
+                createPeerConnection();
+                
+                await peerConnection.setRemoteDescription(pendingOffer);
+                
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                currentCallWith = pendingCallerId;
+                isCallActive = true;
+                
+                socket.emit('answer call', {
+                    toId: pendingCallerId,
+                    answer: answer
+                });
+                
+                callOverlay.style.display = 'flex';
+                
+            } catch (err) {
+                console.error('Ошибка ответа на звонок:', err);
+            }
+        }
+        
+        function rejectCall() {
+            socket.emit('reject call', { toId: pendingCallerId });
+            incomingCallDiv.style.display = 'none';
+            pendingCallerId = null;
+            pendingOffer = null;
+        }
+        
+        socket.on('call answered', async (data) => {
+            await peerConnection.setRemoteDescription(data.answer);
+        });
+        
+        socket.on('ice candidate', async (data) => {
+            if (peerConnection) {
+                await peerConnection.addIceCandidate(data.candidate);
+            }
+        });
+        
+        socket.on('call ended', () => {
+            hangUp();
+        });
+        
+        socket.on('call rejected', () => {
+            alert('Звонок отклонён');
+            hangUp();
+        });
+        
+        function hangUp() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            if (isCallActive && currentCallWith) {
+                socket.emit('end call', { toId: currentCallWith });
+            }
+            
+            callOverlay.style.display = 'none';
+            isCallActive = false;
+            currentCallWith = null;
+            localVideo.srcObject = null;
+            remoteVideo.srcObject = null;
+        }
+        
+        function toggleMic() {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    document.querySelector('.toggle-mic-btn').textContent = audioTrack.enabled ? '🎤 Выкл микрофон' : '🎙️ Вкл микрофон';
+                }
+            }
+        }
+        
+        function toggleVideo() {
+            if (localStream) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.enabled = !videoTrack.enabled;
+                    document.querySelector('.toggle-video-btn').textContent = videoTrack.enabled ? '📹 Выкл камеру' : '📹 Вкл камеру';
+                }
+            }
+        }
+        
+        // ========== ЧАТ ==========
+        
         socket.on('chat history', (messages) => {
             messagesArea.innerHTML = '';
-            messages.forEach(msg => {
-                addMessage(msg);
-            });
+            messages.forEach(msg => addMessage(msg));
         });
         
         socket.on('chat message', (data) => {
@@ -366,12 +726,11 @@
             const message = messageInput.value.trim();
             if (!message) return;
             
-            const messageData = {
+            socket.emit('chat message', {
                 username: currentUser,
                 message: message
-            };
+            });
             
-            socket.emit('chat message', messageData);
             addMessage({
                 username: currentUser,
                 message: message,
@@ -394,6 +753,15 @@
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 100) + 'px';
         });
+        
+        // Если имя сохранено, можно сразу войти
+        if (savedName) {
+            setTimeout(() => {
+                if (currentUser === null && savedName) {
+                    document.getElementById('login-name').value = savedName;
+                }
+            }, 100);
+        }
     </script>
 </body>
 </html>
