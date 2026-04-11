@@ -14,11 +14,15 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             height: 100vh;
+            width: 100vw;
             display: flex;
             justify-content: center;
             align-items: center;
             transition: background 0.3s;
             overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
         }
         
         body.dark {
@@ -31,18 +35,22 @@
         
         .app-container {
             width: 100%;
-            height: 100vh;
+            height: 100%;
             display: flex;
             overflow: hidden;
+            position: relative;
         }
         
+        /* Sidebar */
         .sidebar-telegram {
             width: 320px;
+            max-width: 85vw;
             transition: background 0.3s, border 0.3s, left 0.3s;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100%;
             overflow: hidden;
+            flex-shrink: 0;
         }
         
         body.dark .sidebar-telegram {
@@ -310,12 +318,14 @@
             display: inline-block;
         }
         
+        /* Main chat area */
         .main-chat {
             flex: 1;
             display: flex;
             flex-direction: column;
             transition: background 0.3s;
             overflow: hidden;
+            min-width: 0;
         }
         
         body.dark .main-chat {
@@ -409,6 +419,7 @@
         .messages-area-telegram {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 16px;
             display: flex;
             flex-direction: column;
@@ -433,6 +444,7 @@
             padding: 8px 12px;
             border-radius: 18px;
             position: relative;
+            word-wrap: break-word;
         }
         
         .message-row.own .message-bubble-telegram {
@@ -516,6 +528,7 @@
             transition: opacity 0.2s;
             margin-left: 6px;
             font-size: 11px;
+            display: inline-block;
         }
         
         .message-bubble-telegram:hover .edit-icon-telegram {
@@ -540,10 +553,12 @@
             margin-top: 4px;
         }
         
+        /* Input area - исправлено чтобы не выходила за границы */
         .input-area-telegram {
             padding: 12px 16px;
             transition: background 0.3s, border 0.3s;
             flex-shrink: 0;
+            width: 100%;
         }
         
         body.dark .input-area-telegram {
@@ -583,6 +598,7 @@
             display: flex;
             align-items: flex-end;
             gap: 8px;
+            width: 100%;
         }
         
         .attach-btn {
@@ -625,6 +641,7 @@
             max-height: 100px;
             min-height: 44px;
             outline: none;
+            width: 100%;
         }
         
         body.dark .message-input-telegram {
@@ -748,6 +765,7 @@
             border-radius: 28px;
             text-align: center;
             width: 350px;
+            max-width: 90vw;
         }
         
         body.dark .login-box-telegram {
@@ -808,6 +826,7 @@
             z-index: 2000;
             font-size: 14px;
             animation: pulse 0.5s infinite;
+            white-space: nowrap;
         }
         
         .modal-telegram {
@@ -866,6 +885,7 @@
             background: rgba(102,126,234,0.2);
         }
         
+        /* Mobile styles */
         @media (max-width: 768px) {
             .sidebar-telegram {
                 position: fixed;
@@ -875,6 +895,7 @@
                 z-index: 100;
                 transition: left 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
                 width: 280px;
+                max-width: 85vw;
             }
             
             .sidebar-telegram.open {
@@ -924,6 +945,12 @@
                 padding: 10px 14px;
                 font-size: 14px;
             }
+            
+            .recording-hint-telegram {
+                font-size: 12px;
+                padding: 8px 16px;
+                white-space: nowrap;
+            }
         }
         
         @media (max-width: 480px) {
@@ -941,6 +968,23 @@
             
             .message-text-telegram {
                 font-size: 13px;
+            }
+            
+            .attach-btn,
+            .send-btn-telegram {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+            
+            .message-input-telegram {
+                padding: 8px 12px;
+                font-size: 13px;
+                min-height: 36px;
+            }
+            
+            .input-area-telegram {
+                padding: 8px 12px;
             }
         }
     </style>
@@ -1058,7 +1102,6 @@
             return date.toLocaleDateString('ru', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
         
-        // Авто-вход
         const savedName = localStorage.getItem('messenger_username');
         if (savedName) {
             currentUser = savedName;
@@ -1433,8 +1476,8 @@
         function showContextMenu(x, y, message, isPrivate) {
             const menu = document.createElement('div');
             menu.className = 'context-menu-telegram';
-            menu.style.left = x + 'px';
-            menu.style.top = y + 'px';
+            menu.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+            menu.style.top = Math.min(y, window.innerHeight - 150) + 'px';
             
             const options = ['💬 Ответить', '✏️ Редактировать', '🗑️ Удалить', '📋 Копировать'];
             const actions = [
@@ -1579,7 +1622,6 @@
             messageInput.style.height = 'auto';
         }
         
-        // Mobile swipe handlers
         let touchStartX = 0;
         let touchEndX = 0;
         
@@ -1622,7 +1664,6 @@
         document.addEventListener('touchend', handleTouchEnd, false);
         document.addEventListener('click', closeSidebarOnOutside);
         
-        // Socket events
         socket.on('chat message', (data) => {
             if (currentChat === 'general') {
                 messagesMap.set(data.id, data);
@@ -1675,14 +1716,8 @@
             }
         });
         
-        // НЕ ПОКАЗЫВАЕМ УВЕДОМЛЕНИЯ О ВХОДЕ/ВЫХОДЕ
-        socket.on('user joined', (data) => {
-            // Ничего не делаем
-        });
-        
-        socket.on('user left', (data) => {
-            // Ничего не делаем
-        });
+        socket.on('user joined', (data) => {});
+        socket.on('user left', (data) => {});
         
         socket.on('users list', (users) => {
             allUsers = users;
