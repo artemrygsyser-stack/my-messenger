@@ -21,16 +21,14 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Файлы для сохранения истории
 const HISTORY_FILE = './chat_history.json';
 const PRIVATE_HISTORY_FILE = './private_history.json';
 
 let messageHistory = [];
-let privateMessages = {}; // { "user1_user2": [messages] }
+let privateMessages = {};
 let messageId = 0;
 let privateMessageId = 0;
 
-// Загрузка истории при запуске
 if (fs.existsSync(HISTORY_FILE)) {
   try {
     const data = fs.readFileSync(HISTORY_FILE, 'utf8');
@@ -50,7 +48,6 @@ if (fs.existsSync(PRIVATE_HISTORY_FILE)) {
   } catch(e) { console.log('Ошибка загрузки личных сообщений'); }
 }
 
-// Сохранение истории
 function saveHistory() {
   fs.writeFileSync(HISTORY_FILE, JSON.stringify(messageHistory.slice(-500), null, 2));
 }
@@ -95,14 +92,12 @@ io.on('connection', (socket) => {
     console.log(`✅ ${username} присоединился. Онлайн: ${allUsers.length}`);
   });
   
-  // Получение личных сообщений с пользователем
   socket.on('get private messages', (targetUser) => {
     const key = [socket.username, targetUser].sort().join('_');
     const messages = privateMessages[key] || [];
     socket.emit('private history', messages);
   });
   
-  // Общее сообщение
   socket.on('chat message', (data) => {
     if (!data.username || !data.message) return;
     
@@ -117,7 +112,7 @@ io.on('connection', (socket) => {
       edited: false,
       editedAt: null,
       time: time,
-      timestamp: Date.now()
+      timestamp: data.timestamp || Date.now()
     };
     
     messageHistory.push(messageData);
@@ -127,7 +122,6 @@ io.on('connection', (socket) => {
     io.emit('chat message', messageData);
   });
   
-  // Личное сообщение
   socket.on('private message', (data) => {
     if (!data.from || !data.to || !data.message) return;
     
@@ -140,7 +134,7 @@ io.on('connection', (socket) => {
       to: data.to,
       message: data.message,
       time: time,
-      timestamp: Date.now()
+      timestamp: data.timestamp || Date.now()
     };
     
     const key = [data.from, data.to].sort().join('_');
@@ -149,17 +143,14 @@ io.on('connection', (socket) => {
     if (privateMessages[key].length > 200) privateMessages[key].shift();
     savePrivateHistory();
     
-    // Отправляем получателю, если он онлайн
     const targetSocketId = userSockets.get(data.to);
     if (targetSocketId) {
       io.to(targetSocketId).emit('private message', messageData);
     }
     
-    // Отправляем отправителю подтверждение
     socket.emit('private message sent', messageData);
   });
   
-  // Редактирование общего сообщения
   socket.on('edit message', (data) => {
     const { messageId: editId, newMessage } = data;
     const msgIndex = messageHistory.findIndex(m => m.id === editId);
@@ -177,7 +168,6 @@ io.on('connection', (socket) => {
     }
   });
   
-  // Редактирование личного сообщения
   socket.on('edit private message', (data) => {
     const { messageId: editId, newMessage, targetUser } = data;
     const key = [socket.username, targetUser].sort().join('_');
@@ -205,7 +195,6 @@ io.on('connection', (socket) => {
     }
   });
   
-  // Удаление общего сообщения
   socket.on('delete message', (data) => {
     const { messageId: deleteId } = data;
     const msgIndex = messageHistory.findIndex(m => m.id === deleteId);
@@ -218,7 +207,6 @@ io.on('connection', (socket) => {
     }
   });
   
-  // Удаление личного сообщения
   socket.on('delete private message', (data) => {
     const { messageId: deleteId, targetUser } = data;
     const key = [socket.username, targetUser].sort().join('_');
@@ -237,7 +225,6 @@ io.on('connection', (socket) => {
     }
   });
   
-  // Голосовое сообщение (общее)
   socket.on('voice message', (data) => {
     if (!data.username || !data.audio) return;
     
@@ -251,7 +238,7 @@ io.on('connection', (socket) => {
       duration: data.duration,
       replyTo: data.replyTo || null,
       time: time,
-      timestamp: Date.now()
+      timestamp: data.timestamp || Date.now()
     };
     
     messageHistory.push(messageData);
@@ -261,7 +248,6 @@ io.on('connection', (socket) => {
     io.emit('chat message', messageData);
   });
   
-  // Личное голосовое сообщение
   socket.on('private voice message', (data) => {
     if (!data.from || !data.to || !data.audio) return;
     
@@ -275,7 +261,7 @@ io.on('connection', (socket) => {
       audio: data.audio,
       duration: data.duration,
       time: time,
-      timestamp: Date.now()
+      timestamp: data.timestamp || Date.now()
     };
     
     const key = [data.from, data.to].sort().join('_');
@@ -291,7 +277,6 @@ io.on('connection', (socket) => {
     socket.emit('private voice message sent', messageData);
   });
   
-  // Фото сообщение (общее)
   socket.on('image message', (data) => {
     if (!data.username || !data.image) return;
     
@@ -305,7 +290,7 @@ io.on('connection', (socket) => {
       caption: data.caption || '',
       replyTo: data.replyTo || null,
       time: time,
-      timestamp: Date.now()
+      timestamp: data.timestamp || Date.now()
     };
     
     messageHistory.push(messageData);
@@ -315,7 +300,6 @@ io.on('connection', (socket) => {
     io.emit('chat message', messageData);
   });
   
-  // Личное фото сообщение
   socket.on('private image message', (data) => {
     if (!data.from || !data.to || !data.image) return;
     
@@ -329,7 +313,7 @@ io.on('connection', (socket) => {
       image: data.image,
       caption: data.caption || '',
       time: time,
-      timestamp: Date.now()
+      timestamp: data.timestamp || Date.now()
     };
     
     const key = [data.from, data.to].sort().join('_');

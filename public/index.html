@@ -28,14 +28,12 @@
             background: #e8e8e8;
         }
         
-        /* App container */
         .app-container {
             width: 100%;
             height: 100vh;
             display: flex;
         }
         
-        /* Sidebar - как в Telegram */
         .sidebar-telegram {
             width: 320px;
             transition: background 0.3s, border 0.3s;
@@ -149,7 +147,6 @@
             background: rgba(102,126,234,0.2);
         }
         
-        /* Search */
         .search-box {
             padding: 12px 16px;
             transition: border 0.3s;
@@ -186,7 +183,6 @@
             color: #888;
         }
         
-        /* Chats list */
         .chats-list {
             flex: 1;
             overflow-y: auto;
@@ -298,7 +294,6 @@
             display: inline-block;
         }
         
-        /* Main chat area */
         .main-chat {
             flex: 1;
             display: flex;
@@ -338,10 +333,19 @@
             border: none;
             font-size: 24px;
             cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
         }
         
         body.dark .back-mobile {
             color: white;
+        }
+        
+        body.light .back-mobile {
+            color: #333;
         }
         
         .chat-header-info {
@@ -375,7 +379,6 @@
             color: #666;
         }
         
-        /* Messages area */
         .messages-area-telegram {
             flex: 1;
             overflow-y: auto;
@@ -385,7 +388,6 @@
             gap: 8px;
         }
         
-        /* Message styles */
         .message-row {
             display: flex;
             width: 100%;
@@ -532,7 +534,6 @@
             color: #888;
         }
         
-        /* Input area */
         .input-area-telegram {
             padding: 12px 16px;
             transition: background 0.3s, border 0.3s;
@@ -639,9 +640,6 @@
             align-items: center;
             justify-content: center;
             transition: background 0.2s;
-        }
-        
-        .send-btn-telegram {
             background: #4a3f8a;
             color: white;
         }
@@ -657,7 +655,6 @@
             100% { transform: scale(1); }
         }
         
-        /* Modal для смены ника */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -852,6 +849,7 @@
             background: rgba(102,126,234,0.2);
         }
         
+        /* Mobile styles */
         @media (max-width: 768px) {
             .sidebar-telegram {
                 position: fixed;
@@ -859,25 +857,49 @@
                 top: 0;
                 bottom: 0;
                 z-index: 100;
-                transition: left 0.3s;
+                transition: left 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+                width: 280px;
             }
             
             .sidebar-telegram.open {
                 left: 0;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.3);
             }
             
             .back-mobile {
-                display: block;
+                display: flex;
+            }
+            
+            .chat-header-telegram {
+                padding: 12px 16px;
             }
             
             .message-bubble-telegram {
                 max-width: 85%;
             }
+            
+            .messages-area-telegram {
+                padding: 12px;
+            }
+            
+            .chats-list::-webkit-scrollbar,
+            .messages-area-telegram::-webkit-scrollbar {
+                width: 3px;
+            }
+            
+            .chat-item:active {
+                background: rgba(102,126,234,0.2);
+            }
+            
+            .send-btn-telegram:active,
+            .attach-btn:active,
+            .voice-btn-telegram:active {
+                transform: scale(0.95);
+            }
         }
     </style>
 </head>
 <body class="dark">
-    <!-- Login -->
     <div id="login-overlay" class="login-overlay-telegram" style="display: none;">
         <div class="login-box-telegram">
             <h2>Добро пожаловать!</h2>
@@ -908,7 +930,7 @@
         
         <div class="main-chat">
             <div class="chat-header-telegram">
-                <button class="back-mobile" onclick="toggleMobileSidebar()">☰</button>
+                <button class="back-mobile" onclick="toggleMobileSidebar()">←</button>
                 <div class="chat-header-info">
                     <div class="chat-header-name" id="chat-header-name">Общий чат</div>
                     <div class="chat-header-status" id="chat-header-status"></div>
@@ -920,7 +942,7 @@
             <div class="input-area-telegram">
                 <div id="reply-bar-telegram" class="reply-bar-telegram" style="display: none;">
                     <div><span>Ответ</span> <span id="reply-preview-text"></span></div>
-                    <button style="background:none; border:none; cursor:pointer;" onclick="cancelReply()">✕</button>
+                    <button style="background:none; border:none; cursor:pointer; color:#888;" onclick="cancelReply()">✕</button>
                 </div>
                 <div class="input-wrapper">
                     <button class="attach-btn" onclick="document.getElementById('image-input').click()">📎</button>
@@ -950,9 +972,9 @@
         let currentPrivateWith = null;
         let allUsers = [];
         let chats = [];
-        let messageReadStatus = new Map(); // messageId -> прочитано
+        let messageReadStatus = new Map();
+        let isSidebarOpen = false;
         
-        // DOM элементы
         const loginOverlay = document.getElementById('login-overlay');
         const messagesArea = document.getElementById('messages-area');
         const messageInput = document.getElementById('message-input');
@@ -968,7 +990,6 @@
         const userAvatar = document.getElementById('user-avatar');
         const searchInput = document.getElementById('search-input');
         
-        // Функция форматирования времени
         function formatMessageTime(timestamp) {
             const date = new Date(timestamp);
             const now = new Date();
@@ -987,7 +1008,6 @@
             }
         }
         
-        // Авто-вход
         const savedName = localStorage.getItem('messenger_username');
         if (savedName) {
             currentUser = savedName;
@@ -999,7 +1019,6 @@
             loginOverlay.style.display = 'flex';
         }
         
-        // Восстановление темы
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'light') {
             document.body.classList.remove('dark');
@@ -1065,10 +1084,28 @@
         }
         
         function toggleMobileSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                isSidebarOpen = false;
+            } else {
+                sidebar.classList.add('open');
+                isSidebarOpen = true;
+            }
         }
         
-        // Обновление списка чатов
+        function selectChatAndCloseSidebar(chatId, chatType) {
+            if (chatType === 'general') {
+                switchToGeneral();
+            } else {
+                switchToPrivate(chatId);
+            }
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+                isSidebarOpen = false;
+            }
+        }
+        
         function updateChatsList() {
             const searchTerm = searchInput.value.toLowerCase();
             const filteredChats = chats.filter(chat => 
@@ -1079,14 +1116,7 @@
             filteredChats.forEach(chat => {
                 const chatDiv = document.createElement('div');
                 chatDiv.className = `chat-item ${chat.id === currentChat && chat.type === currentChat ? 'active' : ''}`;
-                chatDiv.onclick = () => {
-                    if (chat.type === 'general') {
-                        switchToGeneral();
-                    } else {
-                        switchToPrivate(chat.id);
-                    }
-                    if (window.innerWidth <= 768) toggleMobileSidebar();
-                };
+                chatDiv.onclick = () => selectChatAndCloseSidebar(chat.id, chat.type);
                 
                 chatDiv.innerHTML = `
                     <div class="chat-avatar ${chat.type === 'general' ? 'general' : 'private'}">
@@ -1108,7 +1138,6 @@
         function switchToGeneral() {
             if (currentChat === 'general' && !currentPrivateWith) return;
             
-            // Сохраняем текущий чат
             if (currentPrivateWith) {
                 saveCurrentChatMessages();
             }
@@ -1120,14 +1149,12 @@
             messagesArea.innerHTML = '';
             messagesMap.clear();
             
-            // Загружаем сохранённые сообщения общего чата
             const savedMessages = JSON.parse(localStorage.getItem(`chat_general`) || '[]');
             savedMessages.forEach(msg => {
                 messagesMap.set(msg.id, msg);
                 addMessageToUI(msg);
             });
             
-            // Снимаем отметку о непрочитанном
             const generalChat = chats.find(c => c.type === 'general');
             if (generalChat) {
                 generalChat.unread = false;
@@ -1140,7 +1167,6 @@
         function switchToPrivate(username) {
             if (currentPrivateWith === username) return;
             
-            // Сохраняем текущий чат
             saveCurrentChatMessages();
             
             currentChat = 'private';
@@ -1150,14 +1176,12 @@
             messagesArea.innerHTML = '';
             messagesMap.clear();
             
-            // Загружаем сохранённые сообщения
             const savedMessages = JSON.parse(localStorage.getItem(`chat_private_${username}`) || '[]');
             savedMessages.forEach(msg => {
                 messagesMap.set(msg.id, msg);
                 addMessageToUI(msg, false, true);
             });
             
-            // Снимаем отметку о непрочитанном
             const privateChat = chats.find(c => c.id === username && c.type === 'private');
             if (privateChat) {
                 privateChat.unread = false;
@@ -1241,12 +1265,6 @@
         function markAsRead(messageId, isPrivate = false) {
             if (!messageReadStatus.get(messageId)) {
                 messageReadStatus.set(messageId, true);
-                if (isPrivate) {
-                    socket.emit('mark private read', { messageId });
-                } else {
-                    socket.emit('mark read', { messageId });
-                }
-                // Обновляем отображение
                 const msgDiv = document.querySelector(`.message-row[data-message-id="${messageId}"]`);
                 if (msgDiv) {
                     const readSpan = msgDiv.querySelector('.read-status');
@@ -1350,7 +1368,6 @@
                 }
             });
             
-            // Если сообщение не от себя и оно видимо - отмечаем как прочитанное
             if (!isOwn && !messageReadStatus.get(data.id)) {
                 setTimeout(() => markAsRead(data.id, isPrivate), 500);
             }
@@ -1508,6 +1525,49 @@
             messageInput.style.height = 'auto';
         }
         
+        // Mobile swipe handlers
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }
+        
+        function handleTouchEnd(e) {
+            if (window.innerWidth > 768) return;
+            
+            touchEndX = e.changedTouches[0].screenX;
+            const swipeDistance = touchEndX - touchStartX;
+            const sidebar = document.getElementById('sidebar');
+            
+            if (swipeDistance > 50 && touchStartX < 50) {
+                sidebar.classList.add('open');
+                isSidebarOpen = true;
+            }
+            
+            if (swipeDistance < -50 && isSidebarOpen) {
+                sidebar.classList.remove('open');
+                isSidebarOpen = false;
+            }
+        }
+        
+        function closeSidebarOnOutside(e) {
+            if (window.innerWidth > 768) return;
+            
+            const sidebar = document.getElementById('sidebar');
+            const isClickInside = sidebar.contains(e.target);
+            const isBackButton = e.target.classList?.contains('back-mobile');
+            
+            if (!isClickInside && !isBackButton && sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                isSidebarOpen = false;
+            }
+        }
+        
+        document.addEventListener('touchstart', handleTouchStart, false);
+        document.addEventListener('touchend', handleTouchEnd, false);
+        document.addEventListener('click', closeSidebarOnOutside);
+        
         // Socket events
         socket.on('chat message', (data) => {
             if (currentChat === 'general') {
@@ -1539,6 +1599,28 @@
             addMessageToChat(data.to, 'private', data.message, true);
         });
         
+        socket.on('chat history', (messages) => {
+            if (currentChat === 'general') {
+                messagesArea.innerHTML = '';
+                messagesMap.clear();
+                messages.forEach(msg => {
+                    messagesMap.set(msg.id, msg);
+                    addMessageToUI(msg);
+                });
+            }
+        });
+        
+        socket.on('private history', (messages) => {
+            if (currentChat === 'private' && currentPrivateWith) {
+                messagesArea.innerHTML = '';
+                messagesMap.clear();
+                messages.forEach(msg => {
+                    messagesMap.set(msg.id, msg);
+                    addMessageToUI(msg, false, true);
+                });
+            }
+        });
+        
         socket.on('user joined', (data) => {
             if (currentChat === 'general') {
                 addMessageToUI(`${escapeHtml(data.username)} присоединился`, true);
@@ -1558,6 +1640,25 @@
             }
         });
         
+        socket.on('message edited', (data) => {
+            const msgDiv = document.querySelector(`.message-row[data-message-id="${data.id}"]`);
+            if (msgDiv && currentChat === 'general') {
+                const textDiv = msgDiv.querySelector('.message-text-telegram');
+                if (textDiv) {
+                    const editIcon = textDiv.querySelector('.edit-icon-telegram');
+                    textDiv.innerHTML = escapeHtml(data.message) + `<span class="edited-mark">(ред.)</span>`;
+                    if (editIcon) textDiv.appendChild(editIcon);
+                }
+            }
+        });
+        
+        socket.on('message deleted', (data) => {
+            const msgDiv = document.querySelector(`.message-row[data-message-id="${data.id}"]`);
+            if (msgDiv && currentChat === 'general') {
+                msgDiv.remove();
+            }
+        });
+        
         sendBtn.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -1572,7 +1673,6 @@
         
         searchInput.addEventListener('input', () => updateChatsList());
         
-        // Добавляем общий чат
         addChat('general', 'Общий чат', 'general', 'Добро пожаловать!');
         
         window.joinChat = joinChat;
