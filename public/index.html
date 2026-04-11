@@ -17,31 +17,56 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: background 0.3s;
+        }
+        
+        body.dark {
             background: #0a0a0f;
         }
         
-        /* Telegram-style container */
+        body.light {
+            background: #e8e8e8;
+        }
+        
+        /* App container */
         .app-container {
             width: 100%;
             height: 100vh;
             display: flex;
-            background: #0a0a0f;
         }
         
         /* Sidebar - как в Telegram */
         .sidebar-telegram {
             width: 320px;
-            background: #0f0f14;
-            border-right: 1px solid #1a1a2e;
+            transition: background 0.3s, border 0.3s;
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
         
+        body.dark .sidebar-telegram {
+            background: #0f0f14;
+            border-right: 1px solid #1a1a2e;
+        }
+        
+        body.light .sidebar-telegram {
+            background: #ffffff;
+            border-right: 1px solid #e0e0e0;
+        }
+        
         .sidebar-header {
             padding: 16px 20px;
+            transition: background 0.3s, border 0.3s;
+        }
+        
+        body.dark .sidebar-header {
             background: #0f0f14;
             border-bottom: 1px solid #1a1a2e;
+        }
+        
+        body.light .sidebar-header {
+            background: #ffffff;
+            border-bottom: 1px solid #e0e0e0;
         }
         
         .user-info {
@@ -61,6 +86,12 @@
             font-size: 18px;
             font-weight: bold;
             color: white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .user-avatar:hover {
+            transform: scale(1.05);
         }
         
         .user-details {
@@ -68,9 +99,17 @@
         }
         
         .user-details h3 {
-            color: white;
+            transition: color 0.3s;
             font-size: 16px;
             margin-bottom: 4px;
+        }
+        
+        body.dark .user-details h3 {
+            color: white;
+        }
+        
+        body.light .user-details h3 {
+            color: #333;
         }
         
         .user-status {
@@ -78,35 +117,73 @@
             color: #2ecc71;
         }
         
-        .theme-toggle-telegram {
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .icon-btn {
             background: none;
             border: none;
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
             padding: 8px;
             border-radius: 50%;
+            transition: background 0.2s;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        body.dark .icon-btn {
             color: #888;
+        }
+        
+        body.light .icon-btn {
+            color: #666;
+        }
+        
+        .icon-btn:hover {
+            background: rgba(102,126,234,0.2);
         }
         
         /* Search */
         .search-box {
             padding: 12px 16px;
+            transition: border 0.3s;
+        }
+        
+        body.dark .search-box {
             border-bottom: 1px solid #1a1a2e;
+        }
+        
+        body.light .search-box {
+            border-bottom: 1px solid #e0e0e0;
         }
         
         .search-input {
             width: 100%;
             padding: 10px 16px;
-            background: #1a1a2e;
             border: none;
             border-radius: 25px;
-            color: white;
             font-size: 14px;
             outline: none;
         }
         
+        body.dark .search-input {
+            background: #1a1a2e;
+            color: white;
+        }
+        
+        body.light .search-input {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
         .search-input::placeholder {
-            color: #666;
+            color: #888;
         }
         
         /* Chats list */
@@ -121,15 +198,22 @@
             padding: 12px 16px;
             cursor: pointer;
             transition: background 0.2s;
+        }
+        
+        body.dark .chat-item {
             border-bottom: 1px solid #1a1a2e;
         }
         
+        body.light .chat-item {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
         .chat-item:hover {
-            background: #1a1a2e;
+            background: rgba(102,126,234,0.1);
         }
         
         .chat-item.active {
-            background: #1f1f2e;
+            background: rgba(102,126,234,0.2);
         }
         
         .chat-avatar {
@@ -158,33 +242,60 @@
         }
         
         .chat-name {
-            color: white;
+            transition: color 0.3s;
             font-size: 15px;
             font-weight: 500;
             margin-bottom: 4px;
         }
         
+        body.dark .chat-name {
+            color: white;
+        }
+        
+        body.light .chat-name {
+            color: #333;
+        }
+        
         .chat-preview {
-            color: #888;
             font-size: 13px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         
-        .chat-time {
-            font-size: 11px;
+        body.dark .chat-preview {
+            color: #888;
+        }
+        
+        body.light .chat-preview {
             color: #666;
+        }
+        
+        .chat-right {
+            text-align: right;
             flex-shrink: 0;
         }
         
+        .chat-time {
+            font-size: 11px;
+        }
+        
+        body.dark .chat-time {
+            color: #666;
+        }
+        
+        body.light .chat-time {
+            color: #999;
+        }
+        
         .chat-badge {
-            background: #e74c3c;
+            background: #667eea;
             color: white;
             font-size: 11px;
             padding: 2px 6px;
             border-radius: 10px;
-            margin-left: 8px;
+            margin-top: 4px;
+            display: inline-block;
         }
         
         /* Main chat area */
@@ -192,25 +303,45 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            transition: background 0.3s;
+        }
+        
+        body.dark .main-chat {
             background: #0d0d14;
+        }
+        
+        body.light .main-chat {
+            background: #f5f5f5;
         }
         
         .chat-header-telegram {
             padding: 16px 20px;
-            background: #0f0f14;
-            border-bottom: 1px solid #1a1a2e;
             display: flex;
             align-items: center;
             gap: 16px;
+            transition: background 0.3s, border 0.3s;
+        }
+        
+        body.dark .chat-header-telegram {
+            background: #0f0f14;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        
+        body.light .chat-header-telegram {
+            background: #ffffff;
+            border-bottom: 1px solid #e0e0e0;
         }
         
         .back-mobile {
             display: none;
             background: none;
             border: none;
-            color: white;
             font-size: 24px;
             cursor: pointer;
+        }
+        
+        body.dark .back-mobile {
+            color: white;
         }
         
         .chat-header-info {
@@ -218,15 +349,30 @@
         }
         
         .chat-header-name {
-            color: white;
+            transition: color 0.3s;
             font-size: 17px;
             font-weight: 600;
             margin-bottom: 2px;
         }
         
+        body.dark .chat-header-name {
+            color: white;
+        }
+        
+        body.light .chat-header-name {
+            color: #333;
+        }
+        
         .chat-header-status {
-            color: #888;
             font-size: 12px;
+        }
+        
+        body.dark .chat-header-status {
+            color: #888;
+        }
+        
+        body.light .chat-header-status {
+            color: #666;
         }
         
         /* Messages area */
@@ -239,7 +385,7 @@
             gap: 8px;
         }
         
-        /* Message styles - как в Telegram */
+        /* Message styles */
         .message-row {
             display: flex;
             width: 100%;
@@ -267,9 +413,18 @@
         }
         
         .message-row.other .message-bubble-telegram {
+            border-bottom-left-radius: 4px;
+        }
+        
+        body.dark .message-row.other .message-bubble-telegram {
             background: #1a1a2e;
             color: #e0e0e0;
-            border-bottom-left-radius: 4px;
+        }
+        
+        body.light .message-row.other .message-bubble-telegram {
+            background: #ffffff;
+            color: #333;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         
         .message-sender {
@@ -299,16 +454,31 @@
         }
         
         .message-row.other .message-meta {
-            color: #666;
+            color: #888;
+        }
+        
+        .read-status {
+            font-size: 11px;
+        }
+        
+        .read-status.read {
+            color: #2ecc71;
         }
         
         .reply-preview-telegram {
-            background: rgba(0,0,0,0.1);
             padding: 6px 10px;
             border-radius: 12px;
             margin-bottom: 6px;
             font-size: 11px;
             border-left: 3px solid #667eea;
+        }
+        
+        body.dark .reply-preview-telegram {
+            background: rgba(255,255,255,0.08);
+        }
+        
+        body.light .reply-preview-telegram {
+            background: rgba(0,0,0,0.05);
         }
         
         .edit-icon-telegram {
@@ -347,22 +517,38 @@
         }
         
         .system-message-telegram span {
-            background: rgba(255,255,255,0.05);
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 11px;
+        }
+        
+        body.dark .system-message-telegram span {
+            background: rgba(255,255,255,0.05);
             color: #666;
         }
         
-        /* Input area - как в Telegram */
+        body.light .system-message-telegram span {
+            background: rgba(0,0,0,0.05);
+            color: #888;
+        }
+        
+        /* Input area */
         .input-area-telegram {
             padding: 12px 16px;
+            transition: background 0.3s, border 0.3s;
+        }
+        
+        body.dark .input-area-telegram {
             background: #0f0f14;
             border-top: 1px solid #1a1a2e;
         }
         
+        body.light .input-area-telegram {
+            background: #ffffff;
+            border-top: 1px solid #e0e0e0;
+        }
+        
         .reply-bar-telegram {
-            background: #1a1a2e;
             padding: 8px 12px;
             border-radius: 12px;
             margin-bottom: 10px;
@@ -370,6 +556,14 @@
             align-items: center;
             justify-content: space-between;
             font-size: 12px;
+        }
+        
+        body.dark .reply-bar-telegram {
+            background: #1a1a2e;
+        }
+        
+        body.light .reply-bar-telegram {
+            background: #f0f0f0;
         }
         
         .reply-bar-telegram span {
@@ -384,10 +578,8 @@
         }
         
         .attach-btn {
-            background: #1a1a2e;
             border: none;
-            color: white;
-            font-size: 22px;
+            font-size: 20px;
             cursor: pointer;
             padding: 10px;
             border-radius: 50%;
@@ -396,30 +588,48 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        body.dark .attach-btn {
+            background: #1a1a2e;
+            color: white;
+        }
+        
+        body.light .attach-btn {
+            background: #f0f0f0;
+            color: #333;
         }
         
         .message-input-telegram {
             flex: 1;
-            background: #1a1a2e;
             border: none;
             border-radius: 25px;
             padding: 12px 16px;
-            color: white;
             font-size: 15px;
             resize: none;
             font-family: inherit;
             max-height: 100px;
             min-height: 44px;
+            outline: none;
+        }
+        
+        body.dark .message-input-telegram {
+            background: #1a1a2e;
+            color: white;
+        }
+        
+        body.light .message-input-telegram {
+            background: #f0f0f0;
+            color: #333;
         }
         
         .message-input-telegram::placeholder {
-            color: #666;
+            color: #888;
         }
         
         .send-btn-telegram {
-            background: #4a3f8a;
             border: none;
-            color: white;
             width: 44px;
             height: 44px;
             border-radius: 50%;
@@ -428,10 +638,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: background 0.2s;
         }
         
-        .voice-btn-telegram {
-            background: #e74c3c;
+        .send-btn-telegram {
+            background: #4a3f8a;
+            color: white;
         }
         
         .voice-btn-telegram.recording {
@@ -445,7 +657,65 @@
             100% { transform: scale(1); }
         }
         
-        /* Login */
+        /* Modal для смены ника */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+        }
+        
+        .modal-content {
+            padding: 30px;
+            border-radius: 20px;
+            width: 320px;
+            text-align: center;
+        }
+        
+        body.dark .modal-content {
+            background: #1a1a2e;
+            color: white;
+        }
+        
+        body.light .modal-content {
+            background: white;
+            color: #333;
+        }
+        
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            margin: 20px 0;
+            border-radius: 25px;
+            font-size: 16px;
+        }
+        
+        body.dark .modal-content input {
+            background: #0d0d14;
+            border: 1px solid #2a2a3e;
+            color: white;
+        }
+        
+        body.light .modal-content input {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+        
+        .modal-content button {
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 25px;
+            cursor: pointer;
+            border: none;
+        }
+        
         .login-overlay-telegram {
             position: fixed;
             top: 0;
@@ -460,27 +730,45 @@
         }
         
         .login-box-telegram {
-            background: #0f0f14;
             padding: 40px;
             border-radius: 28px;
             text-align: center;
             width: 350px;
         }
         
+        body.dark .login-box-telegram {
+            background: #0f0f14;
+        }
+        
+        body.light .login-box-telegram {
+            background: white;
+        }
+        
         .login-box-telegram h2 {
-            color: white;
             margin-bottom: 20px;
+        }
+        
+        body.dark .login-box-telegram h2 {
+            color: white;
         }
         
         .login-box-telegram input {
             width: 100%;
             padding: 14px;
             margin: 20px 0;
-            background: #1a1a2e;
             border: none;
             border-radius: 25px;
-            color: white;
             font-size: 16px;
+        }
+        
+        body.dark .login-box-telegram input {
+            background: #1a1a2e;
+            color: white;
+        }
+        
+        body.light .login-box-telegram input {
+            background: #f0f0f0;
+            color: #333;
         }
         
         .login-box-telegram button {
@@ -529,7 +817,6 @@
         
         .context-menu-telegram {
             position: fixed;
-            background: #1a1a2e;
             border-radius: 12px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.3);
             z-index: 4000;
@@ -537,16 +824,32 @@
             min-width: 180px;
         }
         
+        body.dark .context-menu-telegram {
+            background: #1a1a2e;
+        }
+        
+        body.light .context-menu-telegram {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
         .context-menu-telegram div {
             padding: 12px 16px;
             cursor: pointer;
             transition: background 0.2s;
             font-size: 14px;
+        }
+        
+        body.dark .context-menu-telegram div {
             color: white;
         }
         
+        body.light .context-menu-telegram div {
+            color: #333;
+        }
+        
         .context-menu-telegram div:hover {
-            background: #2a2a3e;
+            background: rgba(102,126,234,0.2);
         }
         
         @media (max-width: 768px) {
@@ -573,7 +876,7 @@
         }
     </style>
 </head>
-<body>
+<body class="dark">
     <!-- Login -->
     <div id="login-overlay" class="login-overlay-telegram" style="display: none;">
         <div class="login-box-telegram">
@@ -584,16 +887,17 @@
     </div>
     
     <div class="app-container">
-        <!-- Sidebar как в Telegram -->
         <div class="sidebar-telegram" id="sidebar">
             <div class="sidebar-header">
                 <div class="user-info">
-                    <div class="user-avatar" id="user-avatar">?</div>
+                    <div class="user-avatar" id="user-avatar" onclick="showEditNicknameModal()">?</div>
                     <div class="user-details">
                         <h3 id="user-name-display">Загрузка...</h3>
-                        <div class="user-status">онлайн</div>
+                        <div class="user-status" id="user-status">онлайн</div>
                     </div>
-                    <button class="theme-toggle-telegram" onclick="toggleTheme()">☀️</button>
+                    <div class="header-buttons">
+                        <button class="icon-btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
+                    </div>
                 </div>
             </div>
             <div class="search-box">
@@ -602,7 +906,6 @@
             <div class="chats-list" id="chats-list"></div>
         </div>
         
-        <!-- Main chat area -->
         <div class="main-chat">
             <div class="chat-header-telegram">
                 <button class="back-mobile" onclick="toggleMobileSidebar()">☰</button>
@@ -617,7 +920,7 @@
             <div class="input-area-telegram">
                 <div id="reply-bar-telegram" class="reply-bar-telegram" style="display: none;">
                     <div><span>Ответ</span> <span id="reply-preview-text"></span></div>
-                    <button style="background:none; border:none; color:#888; cursor:pointer;" onclick="cancelReply()">✕</button>
+                    <button style="background:none; border:none; cursor:pointer;" onclick="cancelReply()">✕</button>
                 </div>
                 <div class="input-wrapper">
                     <button class="attach-btn" onclick="document.getElementById('image-input').click()">📎</button>
@@ -646,8 +949,8 @@
         let currentChat = 'general';
         let currentPrivateWith = null;
         let allUsers = [];
-        let chats = []; // Список чатов для отображения
-        let privateChatsData = new Map(); // Сохранённые ЛС
+        let chats = [];
+        let messageReadStatus = new Map(); // messageId -> прочитано
         
         // DOM элементы
         const loginOverlay = document.getElementById('login-overlay');
@@ -665,6 +968,25 @@
         const userAvatar = document.getElementById('user-avatar');
         const searchInput = document.getElementById('search-input');
         
+        // Функция форматирования времени
+        function formatMessageTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (days === 0) {
+                return date.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+            } else if (days === 1) {
+                return 'Вчера';
+            } else if (days < 7) {
+                const weekdays = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+                return weekdays[date.getDay()];
+            } else {
+                return date.toLocaleDateString('ru', { day: '2-digit', month: '2-digit' });
+            }
+        }
+        
         // Авто-вход
         const savedName = localStorage.getItem('messenger_username');
         if (savedName) {
@@ -675,6 +997,14 @@
             socket.emit('user join', currentUser);
         } else {
             loginOverlay.style.display = 'flex';
+        }
+        
+        // Восстановление темы
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.remove('dark');
+            document.body.classList.add('light');
+            document.getElementById('theme-btn').textContent = '☀️';
         }
         
         function joinChat() {
@@ -691,8 +1021,47 @@
             socket.emit('user join', currentUser);
         }
         
+        function showEditNicknameModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>Изменить имя</h3>
+                    <input type="text" id="new-nickname" value="${currentUser}" maxlength="20">
+                    <div>
+                        <button onclick="changeNickname()">Сохранить</button>
+                        <button onclick="this.closest('.modal-overlay').remove()">Отмена</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            window.changeNickname = () => {
+                const newName = document.getElementById('new-nickname').value.trim();
+                if (newName && newName !== currentUser) {
+                    currentUser = newName;
+                    localStorage.setItem('messenger_username', currentUser);
+                    userNameDisplay.textContent = currentUser;
+                    userAvatar.textContent = currentUser.charAt(0).toUpperCase();
+                    socket.emit('user join', currentUser);
+                    modal.remove();
+                }
+            };
+        }
+        
         function toggleTheme() {
-            document.body.classList.toggle('light-theme');
+            const isDark = document.body.classList.contains('dark');
+            if (isDark) {
+                document.body.classList.remove('dark');
+                document.body.classList.add('light');
+                document.getElementById('theme-btn').textContent = '☀️';
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.remove('light');
+                document.body.classList.add('dark');
+                document.getElementById('theme-btn').textContent = '🌙';
+                localStorage.setItem('theme', 'dark');
+            }
         }
         
         function toggleMobileSidebar() {
@@ -716,9 +1085,7 @@
                     } else {
                         switchToPrivate(chat.id);
                     }
-                    if (window.innerWidth <= 768) {
-                        toggleMobileSidebar();
-                    }
+                    if (window.innerWidth <= 768) toggleMobileSidebar();
                 };
                 
                 chatDiv.innerHTML = `
@@ -729,55 +1096,108 @@
                         <div class="chat-name">${escapeHtml(chat.name)}</div>
                         <div class="chat-preview">${escapeHtml(chat.preview || 'Нет сообщений')}</div>
                     </div>
-                    <div class="chat-time">${chat.time || ''}</div>
-                    ${chat.unread ? '<div class="chat-badge">1</div>' : ''}
+                    <div class="chat-right">
+                        <div class="chat-time">${chat.time || ''}</div>
+                        ${chat.unread ? '<div class="chat-badge">●</div>' : ''}
+                    </div>
                 `;
                 chatsList.appendChild(chatDiv);
             });
         }
         
         function switchToGeneral() {
+            if (currentChat === 'general' && !currentPrivateWith) return;
+            
+            // Сохраняем текущий чат
+            if (currentPrivateWith) {
+                saveCurrentChatMessages();
+            }
+            
             currentChat = 'general';
             currentPrivateWith = null;
             chatHeaderName.textContent = 'Общий чат';
             chatHeaderStatus.textContent = `${allUsers.length} участников`;
             messagesArea.innerHTML = '';
             messagesMap.clear();
-            // Загружаем историю
-            socket.emit('get general history');
+            
+            // Загружаем сохранённые сообщения общего чата
+            const savedMessages = JSON.parse(localStorage.getItem(`chat_general`) || '[]');
+            savedMessages.forEach(msg => {
+                messagesMap.set(msg.id, msg);
+                addMessageToUI(msg);
+            });
+            
+            // Снимаем отметку о непрочитанном
+            const generalChat = chats.find(c => c.type === 'general');
+            if (generalChat) {
+                generalChat.unread = false;
+                updateChatsList();
+            }
+            
             updateChatsList();
         }
         
         function switchToPrivate(username) {
+            if (currentPrivateWith === username) return;
+            
+            // Сохраняем текущий чат
+            saveCurrentChatMessages();
+            
             currentChat = 'private';
             currentPrivateWith = username;
             chatHeaderName.textContent = username;
             chatHeaderStatus.textContent = 'личный чат';
             messagesArea.innerHTML = '';
             messagesMap.clear();
-            socket.emit('get private messages', username);
+            
+            // Загружаем сохранённые сообщения
+            const savedMessages = JSON.parse(localStorage.getItem(`chat_private_${username}`) || '[]');
+            savedMessages.forEach(msg => {
+                messagesMap.set(msg.id, msg);
+                addMessageToUI(msg, false, true);
+            });
+            
+            // Снимаем отметку о непрочитанном
+            const privateChat = chats.find(c => c.id === username && c.type === 'private');
+            if (privateChat) {
+                privateChat.unread = false;
+                updateChatsList();
+            }
+            
             updateChatsList();
         }
         
+        function saveCurrentChatMessages() {
+            const messages = Array.from(messagesMap.values());
+            if (currentChat === 'general') {
+                localStorage.setItem(`chat_general`, JSON.stringify(messages));
+            } else if (currentPrivateWith) {
+                localStorage.setItem(`chat_private_${currentPrivateWith}`, JSON.stringify(messages));
+            }
+        }
+        
         function addChat(chatId, chatName, type, preview = '') {
-            if (!chats.find(c => c.id === chatId && c.type === type)) {
+            const existing = chats.find(c => c.id === chatId && c.type === type);
+            if (!existing) {
                 chats.push({
                     id: chatId,
                     name: chatName,
                     type: type,
                     preview: preview,
-                    time: new Date().toLocaleTimeString().slice(0,5)
+                    time: formatMessageTime(Date.now()),
+                    unread: false
                 });
                 updateChatsList();
             }
         }
         
-        function addMessageToChat(chatId, chatType, messagePreview) {
+        function addMessageToChat(chatId, chatType, messagePreview, isOwn = false) {
             const chat = chats.find(c => c.id === chatId && c.type === chatType);
             if (chat) {
                 chat.preview = messagePreview;
-                chat.time = new Date().toLocaleTimeString().slice(0,5);
-                if (currentChat !== chatType || currentPrivateWith !== chatId) {
+                chat.time = formatMessageTime(Date.now());
+                if ((chatType === 'general' && currentChat !== 'general') || 
+                    (chatType === 'private' && currentPrivateWith !== chatId)) {
                     chat.unread = true;
                 }
                 updateChatsList();
@@ -818,6 +1238,26 @@
             }
         }
         
+        function markAsRead(messageId, isPrivate = false) {
+            if (!messageReadStatus.get(messageId)) {
+                messageReadStatus.set(messageId, true);
+                if (isPrivate) {
+                    socket.emit('mark private read', { messageId });
+                } else {
+                    socket.emit('mark read', { messageId });
+                }
+                // Обновляем отображение
+                const msgDiv = document.querySelector(`.message-row[data-message-id="${messageId}"]`);
+                if (msgDiv) {
+                    const readSpan = msgDiv.querySelector('.read-status');
+                    if (readSpan) {
+                        readSpan.textContent = '✓✓';
+                        readSpan.classList.add('read');
+                    }
+                }
+            }
+        }
+        
         function addMessageToUI(data, isSystem = false, isPrivate = false) {
             if (data.deleted && data.type === 'text') return;
             
@@ -854,14 +1294,24 @@
                 editIcon = `<span class="edit-icon-telegram" onclick="event.stopPropagation(); editMessage(${data.id}, '${escapeHtml(data.message).replace(/'/g, "\\'")}', ${isPrivate}, '${isPrivate ? (data.to === currentUser ? data.from : data.to) : ''}')">✏️</span>`;
             }
             
+            let readStatusHtml = '';
+            if (isOwn && data.type === 'text') {
+                const isRead = messageReadStatus.get(data.id);
+                readStatusHtml = `<span class="read-status ${isRead ? 'read' : ''}">${isRead ? '✓✓' : '✓'}</span>`;
+            }
+            
             let content = '';
             const displayName = isPrivate ? (data.from === currentUser ? 'Вы' : data.from) : data.username;
+            const formattedTime = formatMessageTime(data.timestamp || Date.parse(data.time) || Date.now());
             
             if (data.type === 'text') {
                 content = `
                     ${replyHtml}
                     <div class="message-text-telegram">${escapeHtml(data.message)}${editedHtml}${editIcon}</div>
-                    <div class="message-meta">${data.time}</div>
+                    <div class="message-meta">
+                        ${formattedTime}
+                        ${readStatusHtml}
+                    </div>
                 `;
             } else if (data.type === 'voice') {
                 content = `
@@ -869,14 +1319,14 @@
                     <div class="voice-message-telegram" onclick="event.stopPropagation(); playVoice('${data.audio}')">
                         🔊 Голосовое (${Math.round(data.duration)} сек)
                     </div>
-                    <div class="message-meta">${data.time}</div>
+                    <div class="message-meta">${formattedTime}</div>
                 `;
             } else if (data.type === 'image') {
                 content = `
                     ${replyHtml}
                     <img class="message-image-telegram" src="${data.image}" onclick="event.stopPropagation(); showImage('${data.image}')">
                     ${data.caption ? `<div class="image-caption">${escapeHtml(data.caption)}</div>` : ''}
-                    <div class="message-meta">${data.time}</div>
+                    <div class="message-meta">${formattedTime}</div>
                 `;
             }
             
@@ -899,6 +1349,11 @@
                     showReplyBar(data);
                 }
             });
+            
+            // Если сообщение не от себя и оно видимо - отмечаем как прочитанное
+            if (!isOwn && !messageReadStatus.get(data.id)) {
+                setTimeout(() => markAsRead(data.id, isPrivate), 500);
+            }
             
             messagesArea.appendChild(row);
             messagesArea.scrollTop = messagesArea.scrollHeight;
@@ -982,14 +1437,14 @@
                     reader.onloadend = () => {
                         const duration = audioChunks.reduce((a,c) => a + c.size, 0) / 16000;
                         if (currentChat === 'general') {
-                            const data = { username: currentUser, audio: reader.result, duration };
+                            const data = { username: currentUser, audio: reader.result, duration, timestamp: Date.now() };
                             if (replyToMessage) {
                                 data.replyTo = { id: replyToMessage.id, username: replyToMessage.username };
                                 cancelReply();
                             }
                             socket.emit('voice message', data);
                         } else if (currentPrivateWith) {
-                            socket.emit('private voice message', { from: currentUser, to: currentPrivateWith, audio: reader.result, duration });
+                            socket.emit('private voice message', { from: currentUser, to: currentPrivateWith, audio: reader.result, duration, timestamp: Date.now() });
                         }
                     };
                     stream.getTracks().forEach(t => t.stop());
@@ -1023,14 +1478,14 @@
             reader.onloadend = () => {
                 const caption = prompt('Подпись к фото:', '');
                 if (currentChat === 'general') {
-                    const data = { username: currentUser, image: reader.result, caption: caption || '' };
+                    const data = { username: currentUser, image: reader.result, caption: caption || '', timestamp: Date.now() };
                     if (replyToMessage) {
                         data.replyTo = { id: replyToMessage.id, username: replyToMessage.username };
                         cancelReply();
                     }
                     socket.emit('image message', data);
                 } else if (currentPrivateWith) {
-                    socket.emit('private image message', { from: currentUser, to: currentPrivateWith, image: reader.result, caption: caption || '' });
+                    socket.emit('private image message', { from: currentUser, to: currentPrivateWith, image: reader.result, caption: caption || '', timestamp: Date.now() });
                 }
                 input.value = '';
             };
@@ -1040,61 +1495,48 @@
             const text = messageInput.value.trim();
             if (!text) return;
             if (currentChat === 'general') {
-                const data = { username: currentUser, message: text };
+                const data = { username: currentUser, message: text, timestamp: Date.now() };
                 if (replyToMessage) {
                     data.replyTo = { id: replyToMessage.id, username: replyToMessage.username };
                     cancelReply();
                 }
                 socket.emit('chat message', data);
             } else if (currentPrivateWith) {
-                socket.emit('private message', { from: currentUser, to: currentPrivateWith, message: text });
+                socket.emit('private message', { from: currentUser, to: currentPrivateWith, message: text, timestamp: Date.now() });
             }
             messageInput.value = '';
             messageInput.style.height = 'auto';
         }
         
         // Socket events
-        socket.on('chat history', (messages) => {
-            if (currentChat === 'general') {
-                messagesArea.innerHTML = '';
-                messagesMap.clear();
-                messages.forEach(m => { messagesMap.set(m.id, m); addMessageToUI(m); });
-            }
-        });
-        
-        socket.on('private history', (messages) => {
-            if (currentChat === 'private' && currentPrivateWith) {
-                messagesArea.innerHTML = '';
-                messagesMap.clear();
-                messages.forEach(m => { messagesMap.set(m.id, m); addMessageToUI(m, false, true); });
-            }
-        });
-        
         socket.on('chat message', (data) => {
             if (currentChat === 'general') {
                 messagesMap.set(data.id, data);
                 addMessageToUI(data);
+                saveCurrentChatMessages();
             }
             addChat('general', 'Общий чат', 'general', data.message);
-            addMessageToChat('general', 'general', data.message);
+            addMessageToChat('general', 'general', data.message, data.username === currentUser);
         });
         
         socket.on('private message', (data) => {
             if (currentChat === 'private' && currentPrivateWith && (data.from === currentPrivateWith || data.to === currentPrivateWith)) {
                 messagesMap.set(data.id, data);
                 addMessageToUI(data, false, true);
+                saveCurrentChatMessages();
             }
             addChat(data.from, data.from, 'private', data.message);
-            addMessageToChat(data.from, 'private', data.message);
+            addMessageToChat(data.from, 'private', data.message, false);
         });
         
         socket.on('private message sent', (data) => {
             if (currentChat === 'private' && currentPrivateWith === data.to) {
                 messagesMap.set(data.id, data);
                 addMessageToUI(data, false, true);
+                saveCurrentChatMessages();
             }
             addChat(data.to, data.to, 'private', data.message);
-            addMessageToChat(data.to, 'private', data.message);
+            addMessageToChat(data.to, 'private', data.message, true);
         });
         
         socket.on('user joined', (data) => {
@@ -1116,10 +1558,6 @@
             }
         });
         
-        socket.on('get general history', () => {
-            // Запрос истории при переключении
-        });
-        
         sendBtn.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -1134,7 +1572,7 @@
         
         searchInput.addEventListener('input', () => updateChatsList());
         
-        // Добавляем общий чат в список
+        // Добавляем общий чат
         addChat('general', 'Общий чат', 'general', 'Добро пожаловать!');
         
         window.joinChat = joinChat;
@@ -1147,6 +1585,8 @@
         window.editMessage = editMessage;
         window.playVoice = playVoice;
         window.showImage = showImage;
+        window.showEditNicknameModal = showEditNicknameModal;
+        window.changeNickname = () => {};
     </script>
 </body>
 </html>
