@@ -20,8 +20,8 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const connectedUsers = new Map(); // socket.id -> username
-const userSockets = new Map(); // username -> socket.id
+const connectedUsers = new Map();
+const userSockets = new Map();
 const messageHistory = [];
 let messageId = 0;
 
@@ -35,7 +35,6 @@ io.on('connection', (socket) => {
     
     username = username.trim();
     
-    // Если пользователь уже был с другим сокетом - удаляем старый
     if (userSockets.has(username)) {
       const oldSocketId = userSockets.get(username);
       if (oldSocketId !== socket.id) {
@@ -59,7 +58,6 @@ io.on('connection', (socket) => {
     console.log(`✅ ${username} присоединился. Онлайн: ${allUsers.length}`);
   });
   
-  // Текстовое сообщение
   socket.on('chat message', (data) => {
     if (!data.username || !data.message) return;
     
@@ -83,7 +81,6 @@ io.on('connection', (socket) => {
     io.emit('chat message', messageData);
   });
   
-  // Редактирование сообщения
   socket.on('edit message', (data) => {
     const { messageId: editId, newMessage } = data;
     const msgIndex = messageHistory.findIndex(m => m.id === editId);
@@ -100,7 +97,6 @@ io.on('connection', (socket) => {
     }
   });
   
-  // Удаление сообщения
   socket.on('delete message', (data) => {
     const { messageId: deleteId } = data;
     const msgIndex = messageHistory.findIndex(m => m.id === deleteId);
@@ -112,7 +108,6 @@ io.on('connection', (socket) => {
     }
   });
   
-  // Голосовое сообщение
   socket.on('voice message', (data) => {
     if (!data.username || !data.audio) return;
     
@@ -135,7 +130,6 @@ io.on('connection', (socket) => {
     io.emit('chat message', messageData);
   });
   
-  // Фото сообщение
   socket.on('image message', (data) => {
     if (!data.username || !data.image) return;
     

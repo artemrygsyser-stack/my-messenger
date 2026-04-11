@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Мессенджер - Голосовые, фото, ответы</title>
     <style>
         * {
@@ -13,41 +13,74 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        body.light {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        body.dark {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         }
         
         .chat-container {
             width: 90%;
             max-width: 1200px;
             height: 90vh;
-            background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             display: flex;
             overflow: hidden;
+            transition: background 0.3s;
+        }
+        
+        body.light .chat-container {
+            background: white;
+        }
+        
+        body.dark .chat-container {
+            background: #1e1e2e;
         }
         
         .sidebar {
             width: 280px;
-            background: #2c3e50;
-            color: white;
             display: flex;
             flex-direction: column;
+            transition: background 0.3s;
+        }
+        
+        body.light .sidebar {
+            background: #2c3e50;
+        }
+        
+        body.dark .sidebar {
+            background: #0f0f1a;
         }
         
         .sidebar-header {
             padding: 20px;
+            transition: background 0.3s;
+        }
+        
+        body.light .sidebar-header {
             background: #1a252f;
             border-bottom: 1px solid #34495e;
+        }
+        
+        body.dark .sidebar-header {
+            background: #0a0a12;
+            border-bottom: 1px solid #1a1a2e;
         }
         
         .sidebar-header h3 {
             font-size: 18px;
             margin-bottom: 10px;
+            color: white;
         }
         
         .online-count {
@@ -64,9 +97,19 @@
         .user-item {
             padding: 8px 12px;
             margin: 5px 0;
-            background: #34495e;
             border-radius: 8px;
             font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        body.light .user-item {
+            background: #34495e;
+            color: white;
+        }
+        
+        body.dark .user-item {
+            background: #1a1a2e;
+            color: #ccc;
         }
         
         .user-name {
@@ -89,20 +132,66 @@
         
         .chat-header {
             padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s, border 0.3s;
+        }
+        
+        body.light .chat-header {
             background: #f8f9fa;
             border-bottom: 1px solid #dee2e6;
         }
         
+        body.dark .chat-header {
+            background: #2a2a3e;
+            border-bottom: 1px solid #3a3a4e;
+        }
+        
         .chat-header h2 {
             font-size: 20px;
+            transition: color 0.3s;
+        }
+        
+        body.light .chat-header h2 {
             color: #333;
+        }
+        
+        body.dark .chat-header h2 {
+            color: #fff;
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+        
+        body.light .theme-toggle {
+            background: #e0e0e0;
+        }
+        
+        body.dark .theme-toggle {
+            background: #3a3a4e;
         }
         
         .messages-area {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
+            transition: background 0.3s;
+        }
+        
+        body.light .messages-area {
             background: #f8f9fa;
+        }
+        
+        body.dark .messages-area {
+            background: #1e1e2e;
         }
         
         .message {
@@ -112,10 +201,16 @@
             position: relative;
             cursor: pointer;
             transition: background 0.2s;
+            border-radius: 10px;
+            padding: 5px;
         }
         
         .message:hover {
-            background: rgba(0,0,0,0.03);
+            background: rgba(0,0,0,0.05);
+        }
+        
+        body.dark .message:hover {
+            background: rgba(255,255,255,0.05);
         }
         
         .message.system {
@@ -135,14 +230,28 @@
             border-radius: 20px;
         }
         
+        body.dark .message.system .message-bubble {
+            background: #2a2a3e;
+            color: #aaa;
+        }
+        
         .message-bubble {
             max-width: 70%;
             padding: 10px 15px;
             border-radius: 18px;
             position: relative;
+            transition: background 0.3s, color 0.3s;
         }
         
-        /* Ответ на сообщение */
+        body.light .message-bubble {
+            background: white;
+        }
+        
+        body.dark .message-bubble {
+            background: #2a2a3e;
+            color: #fff;
+        }
+        
         .reply-preview {
             background: rgba(0,0,0,0.05);
             padding: 5px 10px;
@@ -150,6 +259,10 @@
             margin-bottom: 5px;
             font-size: 11px;
             border-left: 3px solid #667eea;
+        }
+        
+        body.dark .reply-preview {
+            background: rgba(255,255,255,0.1);
         }
         
         .reply-preview span {
@@ -165,36 +278,72 @@
             max-width: 200px;
         }
         
-        .reply-indicator {
-            position: absolute;
-            top: -20px;
-            left: 0;
-            background: #667eea;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            display: none;
+        body.dark .reply-preview .reply-text {
+            color: #aaa;
         }
         
         .message-username {
             font-weight: bold;
             font-size: 12px;
             margin-bottom: 4px;
+            transition: color 0.3s;
+        }
+        
+        body.light .message-username {
             color: #495057;
+        }
+        
+        body.dark .message-username {
+            color: #aaa;
         }
         
         .message-text {
             word-wrap: break-word;
+            flex: 1;
         }
         
         .message-time {
             font-size: 10px;
-            color: #6c757d;
             margin-top: 4px;
+            transition: color 0.3s;
         }
         
-        /* Голосовое сообщение */
+        body.light .message-time {
+            color: #6c757d;
+        }
+        
+        body.dark .message-time {
+            color: #888;
+        }
+        
+        .edited-mark {
+            font-size: 9px;
+            font-style: italic;
+            margin-left: 5px;
+        }
+        
+        .edit-icon {
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            padding: 2px 5px;
+            border-radius: 5px;
+        }
+        
+        .message:hover .edit-icon {
+            opacity: 0.7;
+        }
+        
+        .edit-icon:hover {
+            opacity: 1 !important;
+            background: rgba(0,0,0,0.1);
+        }
+        
+        body.dark .edit-icon:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
         .voice-message {
             background: #667eea;
             color: white;
@@ -211,7 +360,6 @@
             background: #5a67d8;
         }
         
-        /* Изображение */
         .message-image {
             max-width: 250px;
             max-height: 250px;
@@ -222,13 +370,18 @@
         
         .image-caption {
             font-size: 12px;
-            color: #666;
             margin-top: 5px;
         }
         
-        /* Панель ответа */
+        body.light .image-caption {
+            color: #666;
+        }
+        
+        body.dark .image-caption {
+            color: #aaa;
+        }
+        
         .reply-bar {
-            background: #f0f0f0;
             padding: 8px 15px;
             display: flex;
             align-items: center;
@@ -236,6 +389,15 @@
             border-left: 4px solid #667eea;
             margin: 0 20px;
             border-radius: 10px;
+            transition: background 0.3s;
+        }
+        
+        body.light .reply-bar {
+            background: #f0f0f0;
+        }
+        
+        body.dark .reply-bar {
+            background: #2a2a3e;
         }
         
         .reply-bar-content {
@@ -253,17 +415,33 @@
             border: none;
             font-size: 18px;
             cursor: pointer;
-            color: #999;
             padding: 0 5px;
+        }
+        
+        body.light .cancel-reply {
+            color: #999;
+        }
+        
+        body.dark .cancel-reply {
+            color: #666;
         }
         
         .input-area {
             padding: 20px;
-            background: white;
-            border-top: 1px solid #dee2e6;
             display: flex;
             flex-direction: column;
             gap: 10px;
+            transition: background 0.3s, border 0.3s;
+        }
+        
+        body.light .input-area {
+            background: white;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        body.dark .input-area {
+            background: #1e1e2e;
+            border-top: 1px solid #2a2a3e;
         }
         
         .message-input-wrapper {
@@ -279,12 +457,23 @@
             font-size: 14px;
             resize: none;
             font-family: inherit;
+            transition: background 0.3s, color 0.3s, border 0.3s;
+        }
+        
+        body.light #message-input {
+            background: white;
+            color: #333;
+            border-color: #dee2e6;
+        }
+        
+        body.dark #message-input {
+            background: #2a2a3e;
+            color: #fff;
+            border-color: #3a3a4e;
         }
         
         button {
             padding: 12px 20px;
-            background: #667eea;
-            color: white;
             border: none;
             border-radius: 25px;
             cursor: pointer;
@@ -292,12 +481,18 @@
             transition: background 0.3s;
         }
         
-        button:hover {
+        .send-btn {
+            background: #667eea;
+            color: white;
+        }
+        
+        .send-btn:hover {
             background: #5a67d8;
         }
         
         .voice-btn {
             background: #e74c3c;
+            color: white;
         }
         
         .voice-btn:hover {
@@ -311,6 +506,7 @@
         
         .image-btn {
             background: #3498db;
+            color: white;
         }
         
         .image-btn:hover {
@@ -406,6 +602,11 @@
             overflow: hidden;
         }
         
+        body.dark .context-menu {
+            background: #2a2a3e;
+            color: white;
+        }
+        
         .context-menu div {
             padding: 10px 20px;
             cursor: pointer;
@@ -414,6 +615,10 @@
         
         .context-menu div:hover {
             background: #f0f0f0;
+        }
+        
+        body.dark .context-menu div:hover {
+            background: #3a3a4e;
         }
         
         @media (max-width: 768px) {
@@ -432,7 +637,7 @@
         }
     </style>
 </head>
-<body>
+<body class="light">
     <div id="login-overlay" class="login-overlay">
         <div class="login-box">
             <h2>Добро пожаловать!</h2>
@@ -453,6 +658,7 @@
         <div class="chat-main">
             <div class="chat-header">
                 <h2>💬 Общий чат</h2>
+                <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
             </div>
             <div class="messages-area" id="messages-area"></div>
             <div id="reply-bar" class="reply-bar" style="display: none;">
@@ -465,7 +671,7 @@
             <div class="input-area">
                 <div class="message-input-wrapper">
                     <textarea id="message-input" placeholder="Введите сообщение..." rows="1"></textarea>
-                    <button id="send-btn">Отправить</button>
+                    <button id="send-btn" class="send-btn">Отправить</button>
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button id="voice-btn" class="voice-btn" onmousedown="startRecording()" onmouseup="stopRecording()" onmouseleave="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()">🎤</button>
@@ -488,9 +694,9 @@
         let audioChunks = [];
         let isRecording = false;
         let replyToMessage = null;
-        let messagesMap = new Map(); // id -> message data
+        let messagesMap = new Map();
+        let isDarkTheme = false;
         
-        // DOM элементы
         const loginOverlay = document.getElementById('login-overlay');
         const chatContainer = document.getElementById('chat-container');
         const messagesArea = document.getElementById('messages-area');
@@ -503,10 +709,30 @@
         const replyBar = document.getElementById('reply-bar');
         const replyPreviewText = document.getElementById('reply-preview-text');
         
-        // Сохранённое имя
         const savedName = localStorage.getItem('messenger_username');
         if (savedName) {
             document.getElementById('login-name').value = savedName;
+        }
+        
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            toggleTheme();
+        }
+        
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            const body = document.body;
+            if (isDarkTheme) {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                document.querySelector('.theme-toggle').textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                document.querySelector('.theme-toggle').textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
         }
         
         function joinChat() {
@@ -550,29 +776,62 @@
             replyPreviewText.innerHTML = '';
         }
         
+        function editMessage(messageId, currentText) {
+            const newText = prompt('Редактировать сообщение:', currentText);
+            if (newText && newText.trim() && newText !== currentText) {
+                socket.emit('edit message', {
+                    messageId: messageId,
+                    newMessage: newText.trim()
+                });
+            }
+        }
+        
         function addMessage(data, isSystem = false) {
+            if (data.deleted && data.type === 'text') {
+                return;
+            }
+            
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
             messageDiv.setAttribute('data-message-id', data.id);
             
             if (isSystem) {
                 messageDiv.className = 'message system';
-                messageDiv.innerHTML = `<div class="message-bubble">${data}</div>`;
+                messageDiv.innerHTML = `<div class="message-bubble">${escapeHtml(data)}</div>`;
             } else {
                 const isCurrentUser = data.username === currentUser;
-                const bubbleStyle = isCurrentUser ? 'background: #667eea; color: white; margin-left: auto;' : 'background: white;';
+                let bubbleStyle = '';
+                if (isCurrentUser) {
+                    bubbleStyle = 'background: #667eea; color: white; margin-left: auto;';
+                } else {
+                    bubbleStyle = 'background: white;';
+                }
                 
                 let replyHtml = '';
                 if (data.replyTo) {
                     const repliedMsg = messagesMap.get(data.replyTo.id);
-                    if (repliedMsg) {
+                    if (repliedMsg && !repliedMsg.deleted) {
                         replyHtml = `
                             <div class="reply-preview">
-                                <span>${repliedMsg.username}:</span>
-                                <div class="reply-text">${formatReplyText(repliedMsg)}</div>
+                                <span>${escapeHtml(repliedMsg.username)}:</span>
+                                <div class="reply-text">${escapeHtml(formatReplyText(repliedMsg))}</div>
                             </div>
                         `;
                     }
+                }
+                
+                let editedHtml = '';
+                if (data.edited) {
+                    editedHtml = `<span class="edited-mark">(ред. ${data.editedAt})</span>`;
+                }
+                
+                let editIconHtml = '';
+                if (isCurrentUser && data.type === 'text' && !data.deleted) {
+                    editIconHtml = `
+                        <span class="edit-icon" onclick="event.stopPropagation(); editMessage(${data.id}, '${escapeHtml(data.message).replace(/'/g, "\\'")}')" title="Редактировать">
+                            ✏️
+                        </span>
+                    `;
                 }
                 
                 let content = '';
@@ -580,7 +839,10 @@
                 if (data.type === 'text') {
                     content = `
                         ${replyHtml}
-                        <div class="message-text">${escapeHtml(data.message)}</div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <div class="message-text" style="flex: 1;">${escapeHtml(data.message)}${editedHtml}</div>
+                            ${editIconHtml}
+                        </div>
                         <div class="message-time">${data.time}</div>
                     `;
                 } else if (data.type === 'voice') {
@@ -607,16 +869,16 @@
                     </div>
                 `;
                 
-                // Контекстное меню при правом клике
-                messageDiv.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    showContextMenu(e.clientX, e.clientY, data);
-                });
+                if (isCurrentUser && data.type === 'text' && !data.deleted) {
+                    messageDiv.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showContextMenu(e.clientX, e.clientY, data);
+                    });
+                }
                 
-                // Левый клик для ответа (можно настроить)
                 messageDiv.addEventListener('click', (e) => {
-                    if (e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON' && !e.target.classList?.contains('voice-message')) {
+                    if (e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON' && !e.target.classList?.contains('voice-message') && !e.target.classList?.contains('edit-icon')) {
                         showReplyBar(data);
                     }
                 });
@@ -639,19 +901,33 @@
                 menu.remove();
             };
             
-            const copyOption = document.createElement('div');
-            copyOption.innerHTML = '📋 Скопировать текст';
-            copyOption.onclick = () => {
-                if (message.type === 'text') {
-                    navigator.clipboard.writeText(message.message);
+            const editOption = document.createElement('div');
+            editOption.innerHTML = '✏️ Редактировать';
+            editOption.onclick = () => {
+                editMessage(message.id, message.message);
+                menu.remove();
+            };
+            
+            const deleteOption = document.createElement('div');
+            deleteOption.innerHTML = '🗑️ Удалить';
+            deleteOption.onclick = () => {
+                if (confirm('Удалить сообщение?')) {
+                    socket.emit('delete message', { messageId: message.id });
                 }
                 menu.remove();
             };
             
+            const copyOption = document.createElement('div');
+            copyOption.innerHTML = '📋 Скопировать текст';
+            copyOption.onclick = () => {
+                navigator.clipboard.writeText(message.message);
+                menu.remove();
+            };
+            
             menu.appendChild(replyOption);
-            if (message.type === 'text') {
-                menu.appendChild(copyOption);
-            }
+            menu.appendChild(editOption);
+            menu.appendChild(deleteOption);
+            menu.appendChild(copyOption);
             
             document.body.appendChild(menu);
             
@@ -690,8 +966,6 @@
                 usersList.appendChild(userDiv);
             });
         }
-        
-        // ========== ГОЛОСОВЫЕ СООБЩЕНИЯ ==========
         
         async function startRecording() {
             if (isRecording) return;
@@ -746,14 +1020,11 @@
             }
         }
         
-        // ========== ФОТО ==========
-        
         function sendImage(input) {
             const file = input.files[0];
             if (!file) return;
             
-            // Проверка размера фото (макс 10MB)
-            const maxSize = 10 * 1024 * 1024; // 10MB
+            const maxSize = 10 * 1024 * 1024;
             if (file.size > maxSize) {
                 alert('Файл слишком большой! Максимальный размер 10MB');
                 input.value = '';
@@ -778,8 +1049,6 @@
             };
         }
         
-        // ========== СОБЫТИЯ ==========
-        
         socket.on('chat history', (messages) => {
             messagesArea.innerHTML = '';
             messagesMap.clear();
@@ -794,6 +1063,32 @@
             addMessage(data);
         });
         
+        socket.on('message edited', (data) => {
+            const msgDiv = document.querySelector(`.message[data-message-id="${data.id}"]`);
+            if (msgDiv) {
+                const textDiv = msgDiv.querySelector('.message-text');
+                if (textDiv) {
+                    const originalText = textDiv.innerHTML.split('<span')[0];
+                    textDiv.innerHTML = escapeHtml(data.message) + `<span class="edited-mark">(ред. ${data.editedAt})</span>`;
+                }
+            }
+            if (messagesMap.has(data.id)) {
+                messagesMap.get(data.id).message = data.message;
+                messagesMap.get(data.id).edited = true;
+                messagesMap.get(data.id).editedAt = data.editedAt;
+            }
+        });
+        
+        socket.on('message deleted', (data) => {
+            const msgDiv = document.querySelector(`.message[data-message-id="${data.id}"]`);
+            if (msgDiv) {
+                msgDiv.remove();
+            }
+            if (messagesMap.has(data.id)) {
+                messagesMap.get(data.id).deleted = true;
+            }
+        });
+        
         socket.on('user joined', (data) => {
             addMessage(`${escapeHtml(data.username)} присоединился`, true);
         });
@@ -804,6 +1099,11 @@
         
         socket.on('users list', (users) => {
             updateUsersList(users);
+        });
+        
+        socket.on('force disconnect', () => {
+            alert('Вы были отключены (открыта другая вкладка)');
+            location.reload();
         });
         
         function sendMessage() {
