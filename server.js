@@ -23,13 +23,15 @@ app.get('/', (req, res) => {
 
 const HISTORY_FILE = './chat_history.json';
 const PRIVATE_HISTORY_FILE = './private_history.json';
+const USERS_FILE = './users.json';
 
 let messageHistory = [];
 let privateMessages = {};
+let registeredUsers = []; // Список занятых ников
 let messageId = 0;
 let privateMessageId = 0;
 
-// Загрузка истории при запуске
+// Загрузка данных
 if (fs.existsSync(HISTORY_FILE)) {
   try {
     const data = fs.readFileSync(HISTORY_FILE, 'utf8');
@@ -37,16 +39,21 @@ if (fs.existsSync(HISTORY_FILE)) {
     if (messageHistory.length > 0) {
       messageId = Math.max(...messageHistory.map(m => m.id)) + 1;
     }
-    console.log(`✅ Загружено ${messageHistory.length} общих сообщений`);
-  } catch(e) { console.log('Ошибка загрузки истории'); }
+  } catch(e) {}
 }
 
 if (fs.existsSync(PRIVATE_HISTORY_FILE)) {
   try {
     const data = fs.readFileSync(PRIVATE_HISTORY_FILE, 'utf8');
     privateMessages = JSON.parse(data);
-    console.log(`✅ Загружены личные сообщения`);
-  } catch(e) { console.log('Ошибка загрузки личных сообщений'); }
+  } catch(e) {}
+}
+
+if (fs.existsSync(USERS_FILE)) {
+  try {
+    const data = fs.readFileSync(USERS_FILE, 'utf8');
+    registeredUsers = JSON.parse(data);
+  } catch(e) {}
 }
 
 function saveHistory() {
@@ -57,6 +64,10 @@ function savePrivateHistory() {
   fs.writeFileSync(PRIVATE_HISTORY_FILE, JSON.stringify(privateMessages, null, 2));
 }
 
+function saveUsers() {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(registeredUsers, null, 2));
+}
+
 const connectedUsers = new Map();
 const userSockets = new Map();
 
@@ -64,11 +75,31 @@ io.on('connection', (socket) => {
   console.log('Новое подключение:', socket.id);
   
   socket.emit('chat history', messageHistory.slice(-100));
+  socket.emit('users list all', registeredUsers);
+  
+  socket.on('check username', (username, callback) => {
+    if (registeredUsers.includes(username)) {
+      callback(false);
+    } else {
+      callback(true);
+    }
+  });
   
   socket.on('user join', (username) => {
     if (!username || username.trim() === '') return;
     
     username = username.trim();
+    
+    // Проверка на уникальность ника
+    if (registeredUsers.includes(username) && !userSockets.has(username)) {
+      socket.emit('username taken', 'Это имя уже занято');
+      return;
+    }
+    
+    if (!registeredUsers.includes(username)) {
+      registeredUsers.push(username);
+      saveUsers();
+    }
     
     if (userSockets.has(username)) {
       const oldSocketId = userSockets.get(username);
@@ -84,9 +115,7 @@ io.on('connection', (socket) => {
     
     const allUsers = Array.from(connectedUsers.values());
     io.emit('users list', allUsers);
-    
-    // НЕ ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ О ВХОДЕ В ЧАТ
-    // socket.broadcast.emit('user joined', { username: username, time: new Date().toLocaleTimeString() });
+    io.emit('users list all', registeredUsers);
     
     console.log(`✅ ${username} присоединился. Онлайн: ${allUsers.length}`);
   });
@@ -152,7 +181,6 @@ io.on('connection', (socket) => {
     socket.emit('private message sent', messageData);
   });
   
-  // Отметка о прочтении в общем чате
   socket.on('mark read', (data) => {
     const { messageId: readId } = data;
     const msgIndex = messageHistory.findIndex(m => m.id === readId);
@@ -354,9 +382,6 @@ io.on('connection', (socket) => {
       
       const allUsers = Array.from(connectedUsers.values());
       io.emit('users list', allUsers);
-      
-      // НЕ ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ О ВЫХОДЕ
-      // socket.broadcast.emit('user left', { username: username, time: new Date().toLocaleTimeString() });
       
       console.log(`❌ ${username} отключился. Онлайн: ${allUsers.length}`);
     }
