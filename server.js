@@ -9,7 +9,9 @@ const io = socketIo(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  }
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -18,7 +20,8 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const connectedUsers = new Map();
+const connectedUsers = new Map(); // socket.id -> username
+const userSockets = new Map(); // username -> socket.id
 const messageHistory = [];
 let messageId = 0;
 
@@ -31,7 +34,18 @@ io.on('connection', (socket) => {
     if (!username || username.trim() === '') return;
     
     username = username.trim();
+    
+    // Если пользователь уже был с другим сокетом - удаляем старый
+    if (userSockets.has(username)) {
+      const oldSocketId = userSockets.get(username);
+      if (oldSocketId !== socket.id) {
+        io.to(oldSocketId).emit('force disconnect');
+        connectedUsers.delete(oldSocketId);
+      }
+    }
+    
     connectedUsers.set(socket.id, username);
+    userSockets.set(username, socket.id);
     socket.username = username;
     
     const allUsers = Array.from(connectedUsers.values());
@@ -42,7 +56,7 @@ io.on('connection', (socket) => {
       time: new Date().toLocaleTimeString()
     });
     
-    console.log(`✅ ${username} присоединился`);
+    console.log(`✅ ${username} присоединился. Онлайн: ${allUsers.length}`);
   });
   
   // Текстовое сообщение
@@ -57,13 +71,45 @@ io.on('connection', (socket) => {
       username: data.username,
       message: data.message,
       replyTo: data.replyTo || null,
-      time: time
+      edited: false,
+      editedAt: null,
+      time: time,
+      timestamp: Date.now()
     };
     
     messageHistory.push(messageData);
-    if (messageHistory.length > 200) messageHistory.shift();
+    if (messageHistory.length > 500) messageHistory.shift();
     
     io.emit('chat message', messageData);
+  });
+  
+  // Редактирование сообщения
+  socket.on('edit message', (data) => {
+    const { messageId: editId, newMessage } = data;
+    const msgIndex = messageHistory.findIndex(m => m.id === editId);
+    
+    if (msgIndex !== -1 && messageHistory[msgIndex].username === socket.username) {
+      messageHistory[msgIndex].message = newMessage;
+      messageHistory[msgIndex].edited = true;
+      messageHistory[msgIndex].editedAt = new Date().toLocaleTimeString();
+      io.emit('message edited', {
+        id: editId,
+        message: newMessage,
+        editedAt: messageHistory[msgIndex].editedAt
+      });
+    }
+  });
+  
+  // Удаление сообщения
+  socket.on('delete message', (data) => {
+    const { messageId: deleteId } = data;
+    const msgIndex = messageHistory.findIndex(m => m.id === deleteId);
+    
+    if (msgIndex !== -1 && messageHistory[msgIndex].username === socket.username) {
+      messageHistory[msgIndex].deleted = true;
+      messageHistory[msgIndex].message = 'Сообщение удалено';
+      io.emit('message deleted', { id: deleteId });
+    }
   });
   
   // Голосовое сообщение
@@ -79,11 +125,12 @@ io.on('connection', (socket) => {
       audio: data.audio,
       duration: data.duration,
       replyTo: data.replyTo || null,
-      time: time
+      time: time,
+      timestamp: Date.now()
     };
     
     messageHistory.push(messageData);
-    if (messageHistory.length > 200) messageHistory.shift();
+    if (messageHistory.length > 500) messageHistory.shift();
     
     io.emit('chat message', messageData);
   });
@@ -101,11 +148,12 @@ io.on('connection', (socket) => {
       image: data.image,
       caption: data.caption || '',
       replyTo: data.replyTo || null,
-      time: time
+      time: time,
+      timestamp: Date.now()
     };
     
     messageHistory.push(messageData);
-    if (messageHistory.length > 200) messageHistory.shift();
+    if (messageHistory.length > 500) messageHistory.shift();
     
     io.emit('chat message', messageData);
   });
@@ -114,6 +162,7 @@ io.on('connection', (socket) => {
     const username = connectedUsers.get(socket.id);
     if (username) {
       connectedUsers.delete(socket.id);
+      userSockets.delete(username);
       
       const allUsers = Array.from(connectedUsers.values());
       io.emit('users list', allUsers);
@@ -123,7 +172,7 @@ io.on('connection', (socket) => {
         time: new Date().toLocaleTimeString()
       });
       
-      console.log(`❌ ${username} отключился`);
+      console.log(`❌ ${username} отключился. Онлайн: ${allUsers.length}`);
     }
   });
 });
