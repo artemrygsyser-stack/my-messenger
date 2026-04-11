@@ -29,6 +29,7 @@ let privateMessages = {};
 let messageId = 0;
 let privateMessageId = 0;
 
+// Загрузка истории при запуске
 if (fs.existsSync(HISTORY_FILE)) {
   try {
     const data = fs.readFileSync(HISTORY_FILE, 'utf8');
@@ -84,10 +85,8 @@ io.on('connection', (socket) => {
     const allUsers = Array.from(connectedUsers.values());
     io.emit('users list', allUsers);
     
-    socket.broadcast.emit('user joined', {
-      username: username,
-      time: new Date().toLocaleTimeString()
-    });
+    // НЕ ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ О ВХОДЕ В ЧАТ
+    // socket.broadcast.emit('user joined', { username: username, time: new Date().toLocaleTimeString() });
     
     console.log(`✅ ${username} присоединился. Онлайн: ${allUsers.length}`);
   });
@@ -112,7 +111,8 @@ io.on('connection', (socket) => {
       edited: false,
       editedAt: null,
       time: time,
-      timestamp: data.timestamp || Date.now()
+      timestamp: data.timestamp || Date.now(),
+      readBy: []
     };
     
     messageHistory.push(messageData);
@@ -134,7 +134,8 @@ io.on('connection', (socket) => {
       to: data.to,
       message: data.message,
       time: time,
-      timestamp: data.timestamp || Date.now()
+      timestamp: data.timestamp || Date.now(),
+      read: false
     };
     
     const key = [data.from, data.to].sort().join('_');
@@ -149,6 +150,18 @@ io.on('connection', (socket) => {
     }
     
     socket.emit('private message sent', messageData);
+  });
+  
+  // Отметка о прочтении в общем чате
+  socket.on('mark read', (data) => {
+    const { messageId: readId } = data;
+    const msgIndex = messageHistory.findIndex(m => m.id === readId);
+    if (msgIndex !== -1 && !messageHistory[msgIndex].readBy?.includes(socket.username)) {
+      if (!messageHistory[msgIndex].readBy) messageHistory[msgIndex].readBy = [];
+      messageHistory[msgIndex].readBy.push(socket.username);
+      saveHistory();
+      io.emit('message read', { messageId: readId, reader: socket.username });
+    }
   });
   
   socket.on('edit message', (data) => {
@@ -238,7 +251,8 @@ io.on('connection', (socket) => {
       duration: data.duration,
       replyTo: data.replyTo || null,
       time: time,
-      timestamp: data.timestamp || Date.now()
+      timestamp: data.timestamp || Date.now(),
+      readBy: []
     };
     
     messageHistory.push(messageData);
@@ -261,7 +275,8 @@ io.on('connection', (socket) => {
       audio: data.audio,
       duration: data.duration,
       time: time,
-      timestamp: data.timestamp || Date.now()
+      timestamp: data.timestamp || Date.now(),
+      read: false
     };
     
     const key = [data.from, data.to].sort().join('_');
@@ -290,7 +305,8 @@ io.on('connection', (socket) => {
       caption: data.caption || '',
       replyTo: data.replyTo || null,
       time: time,
-      timestamp: data.timestamp || Date.now()
+      timestamp: data.timestamp || Date.now(),
+      readBy: []
     };
     
     messageHistory.push(messageData);
@@ -313,7 +329,8 @@ io.on('connection', (socket) => {
       image: data.image,
       caption: data.caption || '',
       time: time,
-      timestamp: data.timestamp || Date.now()
+      timestamp: data.timestamp || Date.now(),
+      read: false
     };
     
     const key = [data.from, data.to].sort().join('_');
@@ -338,10 +355,8 @@ io.on('connection', (socket) => {
       const allUsers = Array.from(connectedUsers.values());
       io.emit('users list', allUsers);
       
-      socket.broadcast.emit('user left', {
-        username: username,
-        time: new Date().toLocaleTimeString()
-      });
+      // НЕ ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ О ВЫХОДЕ
+      // socket.broadcast.emit('user left', { username: username, time: new Date().toLocaleTimeString() });
       
       console.log(`❌ ${username} отключился. Онлайн: ${allUsers.length}`);
     }
