@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Мессенджер - Telegram стиль</title>
     <style>
         * {
@@ -18,6 +18,7 @@
             justify-content: center;
             align-items: center;
             transition: background 0.3s;
+            overflow: hidden;
         }
         
         body.dark {
@@ -32,15 +33,17 @@
             width: 100%;
             height: 100vh;
             display: flex;
+            overflow: hidden;
         }
         
         /* Sidebar - список чатов как в Telegram */
         .sidebar-telegram {
             width: 320px;
-            transition: background 0.3s, border 0.3s;
+            transition: background 0.3s, border 0.3s, left 0.3s;
             display: flex;
             flex-direction: column;
             height: 100vh;
+            overflow: hidden;
         }
         
         body.dark .sidebar-telegram {
@@ -56,6 +59,7 @@
         .sidebar-header {
             padding: 16px 20px;
             transition: background 0.3s, border 0.3s;
+            flex-shrink: 0;
         }
         
         body.dark .sidebar-header {
@@ -87,20 +91,25 @@
             color: white;
             cursor: pointer;
             transition: transform 0.2s;
+            flex-shrink: 0;
         }
         
-        .user-avatar:hover {
-            transform: scale(1.05);
+        .user-avatar:active {
+            transform: scale(0.95);
         }
         
         .user-details {
             flex: 1;
+            min-width: 0;
         }
         
         .user-details h3 {
             transition: color 0.3s;
             font-size: 16px;
             margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         body.dark .user-details h3 {
@@ -119,6 +128,7 @@
         .header-buttons {
             display: flex;
             gap: 8px;
+            flex-shrink: 0;
         }
         
         .icon-btn {
@@ -144,13 +154,14 @@
             color: #666;
         }
         
-        .icon-btn:hover {
-            background: rgba(102,126,234,0.2);
+        .icon-btn:active {
+            background: rgba(102,126,234,0.3);
         }
         
         .search-box {
             padding: 12px 16px;
             transition: border 0.3s;
+            flex-shrink: 0;
         }
         
         body.dark .search-box {
@@ -187,6 +198,7 @@
         .chats-list {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
         }
         
         .chat-item {
@@ -205,8 +217,8 @@
             border-bottom: 1px solid #e0e0e0;
         }
         
-        .chat-item:hover {
-            background: rgba(102,126,234,0.1);
+        .chat-item:active {
+            background: rgba(102,126,234,0.15);
         }
         
         .chat-item.active {
@@ -243,6 +255,9 @@
             font-size: 15px;
             font-weight: 500;
             margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         body.dark .chat-name {
@@ -271,6 +286,7 @@
         .chat-right {
             text-align: right;
             flex-shrink: 0;
+            margin-left: 8px;
         }
         
         .chat-time {
@@ -288,8 +304,8 @@
         .chat-badge {
             background: #667eea;
             color: white;
-            font-size: 11px;
-            padding: 2px 6px;
+            font-size: 10px;
+            padding: 2px 5px;
             border-radius: 10px;
             margin-top: 4px;
             display: inline-block;
@@ -301,6 +317,7 @@
             display: flex;
             flex-direction: column;
             transition: background 0.3s;
+            overflow: hidden;
         }
         
         body.dark .main-chat {
@@ -317,6 +334,7 @@
             align-items: center;
             gap: 16px;
             transition: background 0.3s, border 0.3s;
+            flex-shrink: 0;
         }
         
         body.dark .chat-header-telegram {
@@ -340,6 +358,11 @@
             border-radius: 50%;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .back-mobile:active {
+            background: rgba(102,126,234,0.2);
         }
         
         body.dark .back-mobile {
@@ -352,6 +375,7 @@
         
         .chat-header-info {
             flex: 1;
+            min-width: 0;
         }
         
         .chat-header-name {
@@ -359,6 +383,9 @@
             font-size: 17px;
             font-weight: 600;
             margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         body.dark .chat-header-name {
@@ -384,7 +411,7 @@
         .messages-area-telegram {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -405,7 +432,7 @@
         }
         
         .message-bubble-telegram {
-            max-width: 65%;
+            max-width: 70%;
             padding: 8px 12px;
             border-radius: 18px;
             position: relative;
@@ -516,31 +543,11 @@
             margin-top: 4px;
         }
         
-        .system-message-telegram {
-            text-align: center;
-            margin: 10px 0;
-        }
-        
-        .system-message-telegram span {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-        }
-        
-        body.dark .system-message-telegram span {
-            background: rgba(255,255,255,0.05);
-            color: #666;
-        }
-        
-        body.light .system-message-telegram span {
-            background: rgba(0,0,0,0.05);
-            color: #888;
-        }
-        
         /* Input area */
         .input-area-telegram {
             padding: 12px 16px;
             transition: background 0.3s, border 0.3s;
+            flex-shrink: 0;
         }
         
         body.dark .input-area-telegram {
@@ -579,7 +586,7 @@
         .input-wrapper {
             display: flex;
             align-items: flex-end;
-            gap: 10px;
+            gap: 8px;
         }
         
         .attach-btn {
@@ -594,6 +601,7 @@
             align-items: center;
             justify-content: center;
             transition: background 0.2s;
+            flex-shrink: 0;
         }
         
         body.dark .attach-btn {
@@ -604,6 +612,10 @@
         body.light .attach-btn {
             background: #f0f0f0;
             color: #333;
+        }
+        
+        .attach-btn:active {
+            transform: scale(0.95);
         }
         
         .message-input-telegram {
@@ -646,6 +658,11 @@
             transition: background 0.2s;
             background: #4a3f8a;
             color: white;
+            flex-shrink: 0;
+        }
+        
+        .send-btn-telegram:active {
+            transform: scale(0.95);
         }
         
         .voice-btn-telegram.recording {
@@ -850,7 +867,7 @@
             color: #333;
         }
         
-        .context-menu-telegram div:hover {
+        .context-menu-telegram div:active {
             background: rgba(102,126,234,0.2);
         }
         
@@ -892,14 +909,44 @@
                 width: 3px;
             }
             
-            .chat-item:active {
-                background: rgba(102,126,234,0.2);
+            .chat-item {
+                padding: 10px 14px;
             }
             
-            .send-btn-telegram:active,
-            .attach-btn:active,
-            .voice-btn-telegram:active {
-                transform: scale(0.95);
+            .chat-avatar {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+            
+            .attach-btn,
+            .send-btn-telegram {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            
+            .message-input-telegram {
+                padding: 10px 14px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sidebar-telegram {
+                width: 260px;
+            }
+            
+            .chat-header-name {
+                font-size: 15px;
+            }
+            
+            .message-sender {
+                font-size: 11px;
+            }
+            
+            .message-text-telegram {
+                font-size: 13px;
             }
         }
     </style>
@@ -947,7 +994,7 @@
             <div class="input-area-telegram">
                 <div id="reply-bar-telegram" class="reply-bar-telegram" style="display: none;">
                     <div><span>Ответ</span> <span id="reply-preview-text"></span></div>
-                    <button style="background:none; border:none; cursor:pointer; color:#888;" onclick="cancelReply()">✕</button>
+                    <button style="background:none; border:none; cursor:pointer; color:#888; font-size:16px;" onclick="cancelReply()">✕</button>
                 </div>
                 <div class="input-wrapper">
                     <button class="attach-btn" onclick="document.getElementById('image-input').click()">📎</button>
@@ -1005,23 +1052,16 @@
             const weekAgo = new Date(today);
             weekAgo.setDate(weekAgo.getDate() - 7);
             
-            // Сегодня - показываем время (часы:минуты)
             if (date >= today) {
                 return date.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
             }
-            
-            // Вчера
             if (date >= yesterday && date < today) {
                 return 'Вчера';
             }
-            
-            // На этой неделе (но не вчера)
             if (date >= weekAgo) {
                 const weekdays = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
                 return weekdays[date.getDay()];
             }
-            
-            // Старше недели - полная дата
             return date.toLocaleDateString('ru', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
         
@@ -1291,6 +1331,12 @@
                         readSpan.classList.add('read');
                     }
                 }
+                // Отправляем подтверждение прочтения на сервер
+                if (isPrivate) {
+                    socket.emit('mark private read', { messageId, withUser: currentPrivateWith });
+                } else {
+                    socket.emit('mark read', { messageId });
+                }
             }
         }
         
@@ -1386,8 +1432,9 @@
                 }
             });
             
+            // Если сообщение не от себя - отмечаем как прочитанное через 1 секунду
             if (!isOwn && !messageReadStatus.get(data.id)) {
-                setTimeout(() => markAsRead(data.id, isPrivate), 500);
+                setTimeout(() => markAsRead(data.id, isPrivate), 1000);
             }
             
             messagesArea.appendChild(row);
@@ -1645,9 +1692,11 @@
             }
         });
         
+        // НЕ ПОКАЗЫВАЕМ СООБЩЕНИЕ О ВЫХОДЕ - просто обновляем список
         socket.on('user left', (data) => {
+            // Ничего не показываем в чате
             if (currentChat === 'general') {
-                addMessageToUI(`${escapeHtml(data.username)} вышел`, true);
+                // Просто обновляем статус
             }
         });
         
@@ -1656,6 +1705,8 @@
             if (currentChat === 'general') {
                 chatHeaderStatus.textContent = `${users.length} участников`;
             }
+            // Обновляем список чатов - убираем оффлайн пользователей из списка
+            // Они останутся только в ЛС
         });
         
         socket.on('message edited', (data) => {
@@ -1674,6 +1725,20 @@
             const msgDiv = document.querySelector(`.message-row[data-message-id="${data.id}"]`);
             if (msgDiv && currentChat === 'general') {
                 msgDiv.remove();
+            }
+        });
+        
+        // Статус прочтения от сервера
+        socket.on('message read', (data) => {
+            if (messageReadStatus.get(data.messageId)) return;
+            messageReadStatus.set(data.messageId, true);
+            const msgDiv = document.querySelector(`.message-row[data-message-id="${data.messageId}"]`);
+            if (msgDiv && currentChat === 'general') {
+                const readSpan = msgDiv.querySelector('.read-status');
+                if (readSpan && msgDiv.classList.contains('own')) {
+                    readSpan.textContent = '✓✓';
+                    readSpan.classList.add('read');
+                }
             }
         });
         
