@@ -24,14 +24,15 @@ app.get('/', (req, res) => {
 const HISTORY_FILE = './chat_history.json';
 const PRIVATE_HISTORY_FILE = './private_history.json';
 const USERS_FILE = './users.json';
+const BLOCKED_FILE = './blocked.json';
 
 let messageHistory = [];
 let privateMessages = {};
-let registeredUsers = []; // Список занятых ников
+let registeredUsers = [];
+let blockedUsers = {};
 let messageId = 0;
 let privateMessageId = 0;
 
-// Загрузка данных
 if (fs.existsSync(HISTORY_FILE)) {
   try {
     const data = fs.readFileSync(HISTORY_FILE, 'utf8');
@@ -56,6 +57,13 @@ if (fs.existsSync(USERS_FILE)) {
   } catch(e) {}
 }
 
+if (fs.existsSync(BLOCKED_FILE)) {
+  try {
+    const data = fs.readFileSync(BLOCKED_FILE, 'utf8');
+    blockedUsers = JSON.parse(data);
+  } catch(e) {}
+}
+
 function saveHistory() {
   fs.writeFileSync(HISTORY_FILE, JSON.stringify(messageHistory.slice(-500), null, 2));
 }
@@ -66,6 +74,10 @@ function savePrivateHistory() {
 
 function saveUsers() {
   fs.writeFileSync(USERS_FILE, JSON.stringify(registeredUsers, null, 2));
+}
+
+function saveBlocked() {
+  fs.writeFileSync(BLOCKED_FILE, JSON.stringify(blockedUsers, null, 2));
 }
 
 const connectedUsers = new Map();
@@ -90,7 +102,6 @@ io.on('connection', (socket) => {
     
     username = username.trim();
     
-    // Проверка на уникальность ника
     if (registeredUsers.includes(username) && !userSockets.has(username)) {
       socket.emit('username taken', 'Это имя уже занято');
       return;
@@ -117,13 +128,59 @@ io.on('connection', (socket) => {
     io.emit('users list', allUsers);
     io.emit('users list all', registeredUsers);
     
+    socket.emit('blocked list', blockedUsers[username] || []);
+    
     console.log(`✅ ${username} присоединился. Онлайн: ${allUsers.length}`);
   });
   
+  socket.on('block user', (targetUser) => {
+    const blocker = socket.username;
+    if (!blockedUsers[blocker]) blockedUsers[blocker] = [];
+    if (!blockedUsers[blocker].includes(targetUser)) {
+      blockedUsers[blocker].push(targetUser);
+      saveBlocked();
+      socket.emit('blocked list', blockedUsers[blocker]);
+      socket.emit('user blocked', targetUser);
+    }
+  });
+  
+  socket.on('unblock user', (targetUser) => {
+    const blocker = socket.username;
+    if (blockedUsers[blocker]) {
+      blockedUsers[blocker] = blockedUsers[blocker].filter(u => u !== targetUser);
+      saveBlocked();
+      socket.emit('blocked list', blockedUsers[blocker]);
+      socket.emit('user unblocked', targetUser);
+    }
+  });
+  
+  socket.on('check blocked', (targetUser, callback) => {
+    const blocker = socket.username;
+    const isBlocked = blockedUsers[targetUser]?.includes(blocker) || false;
+    callback(isBlocked);
+  });
+  
+  socket.on('delete chat', (targetUser) => {
+    const user = socket.username;
+    const key = [user, targetUser].sort().join('_');
+    if (privateMessages[key]) {
+      delete privateMessages[key];
+      savePrivateHistory();
+      socket.emit('chat deleted', targetUser);
+    }
+  });
+  
   socket.on('get private messages', (targetUser) => {
+    const blocker = socket.username;
+    if (blockedUsers[targetUser]?.includes(blocker)) {
+      socket.emit('private history', []);
+      socket.emit('blocked info', true);
+      return;
+    }
     const key = [socket.username, targetUser].sort().join('_');
     const messages = privateMessages[key] || [];
     socket.emit('private history', messages);
+    socket.emit('blocked info', false);
   });
   
   socket.on('chat message', (data) => {
@@ -154,6 +211,15 @@ io.on('connection', (socket) => {
   socket.on('private message', (data) => {
     if (!data.from || !data.to || !data.message) return;
     
+    if (blockedUsers[data.to]?.includes(data.from)) {
+      socket.emit('blocked error', 'Вы заблокированы этим пользователем');
+      return;
+    }
+    if (blockedUsers[data.from]?.includes(data.to)) {
+      socket.emit('blocked error', 'Вы заблокировали этого пользователя');
+      return;
+    }
+    
     privateMessageId++;
     const time = new Date().toLocaleTimeString();
     const messageData = {
@@ -164,7 +230,8 @@ io.on('connection', (socket) => {
       message: data.message,
       time: time,
       timestamp: data.timestamp || Date.now(),
-      read: false
+      read: false,
+      readAt: null
     };
     
     const key = [data.from, data.to].sort().join('_');
@@ -179,6 +246,23 @@ io.on('connection', (socket) => {
     }
     
     socket.emit('private message sent', messageData);
+  });
+  
+  socket.on('mark private read', (data) => {
+    const { messageId: readId, withUser } = data;
+    const key = [socket.username, withUser].sort().join('_');
+    const msgIndex = privateMessages[key]?.findIndex(m => m.id === readId);
+    
+    if (msgIndex !== -1 && privateMessages[key][msgIndex].to === socket.username && !privateMessages[key][msgIndex].read) {
+      privateMessages[key][msgIndex].read = true;
+      privateMessages[key][msgIndex].readAt = new Date().toLocaleTimeString();
+      savePrivateHistory();
+      
+      const targetSocketId = userSockets.get(withUser);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('private message read', { messageId: readId, withUser: socket.username });
+      }
+    }
   });
   
   socket.on('mark read', (data) => {
@@ -293,6 +377,9 @@ io.on('connection', (socket) => {
   socket.on('private voice message', (data) => {
     if (!data.from || !data.to || !data.audio) return;
     
+    if (blockedUsers[data.to]?.includes(data.from)) return;
+    if (blockedUsers[data.from]?.includes(data.to)) return;
+    
     privateMessageId++;
     const time = new Date().toLocaleTimeString();
     const messageData = {
@@ -346,6 +433,9 @@ io.on('connection', (socket) => {
   
   socket.on('private image message', (data) => {
     if (!data.from || !data.to || !data.image) return;
+    
+    if (blockedUsers[data.to]?.includes(data.from)) return;
+    if (blockedUsers[data.from]?.includes(data.to)) return;
     
     privateMessageId++;
     const time = new Date().toLocaleTimeString();

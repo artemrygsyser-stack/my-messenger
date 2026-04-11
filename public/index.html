@@ -338,7 +338,7 @@
             padding: 16px 20px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            justify-content: space-between;
             transition: background 0.3s, border 0.3s;
             flex-shrink: 0;
         }
@@ -351,6 +351,12 @@
         body.light .chat-header-telegram {
             background: #ffffff;
             border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
         
         .back-mobile {
@@ -686,7 +692,6 @@
             100% { transform: scale(1); }
         }
         
-        /* Search users modal */
         .search-users-modal {
             position: fixed;
             top: 0;
@@ -1009,6 +1014,28 @@
             margin-right: 16px;
         }
         
+        .chat-menu-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        body.dark .chat-menu-btn {
+            color: white;
+        }
+        
+        body.light .chat-menu-btn {
+            color: #333;
+        }
+        
         @media (max-width: 768px) {
             .sidebar-telegram {
                 position: fixed;
@@ -1151,11 +1178,16 @@
         </div>
         
         <div class="main-chat">
-            <div class="chat-header-telegram">
-                <button class="back-mobile" onclick="toggleMobileSidebar()">←</button>
-                <div class="chat-header-info">
-                    <div class="chat-header-name" id="chat-header-name">Общий чат</div>
-                    <div class="chat-header-status" id="chat-header-status"></div>
+            <div class="chat-header-telegram" id="chat-header">
+                <div class="chat-header-left">
+                    <button class="back-mobile" onclick="toggleMobileSidebar()">←</button>
+                    <div class="chat-header-info">
+                        <div class="chat-header-name" id="chat-header-name">Общий чат</div>
+                        <div class="chat-header-status" id="chat-header-status"></div>
+                    </div>
+                </div>
+                <div class="header-buttons" id="chat-header-buttons">
+                    <!-- Кнопка меню для ЛС будет добавлена здесь -->
                 </div>
             </div>
             
@@ -1197,6 +1229,7 @@
         let chats = [];
         let messageReadStatus = new Map();
         let isSidebarOpen = false;
+        let blockedUsersList = [];
         
         const loginOverlay = document.getElementById('login-overlay');
         const messagesArea = document.getElementById('messages-area');
@@ -1213,6 +1246,7 @@
         const userAvatar = document.getElementById('user-avatar');
         const searchInput = document.getElementById('search-input');
         const loginError = document.getElementById('login-error');
+        const chatHeaderButtons = document.getElementById('chat-header-buttons');
         
         function formatMessageTime(timestamp) {
             const date = new Date(timestamp);
@@ -1287,6 +1321,54 @@
             document.querySelector('.search-users-modal')?.remove();
             addChat(username, username, 'private', '');
             switchToPrivate(username);
+        }
+        
+        function showPrivateChatMenu(user) {
+            const isBlocked = blockedUsersList.includes(user);
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content" style="width: 280px;">
+                    <h3>Действия с ${escapeHtml(user)}</h3>
+                    <div style="margin: 15px 0;">
+                        <button onclick="deletePrivateChat('${user}')" style="width:100%; margin:5px 0; background:#e74c3c; padding:10px; border-radius:25px;">🗑️ Удалить чат</button>
+                        <button onclick="${isBlocked ? `unblockUser('${user}')` : `blockUser('${user}')`}" style="width:100%; margin:5px 0; background:#3498db; padding:10px; border-radius:25px;">
+                            ${isBlocked ? '🔓 Разблокировать' : '🔒 Заблокировать'}
+                        </button>
+                    </div>
+                    <button onclick="this.closest('.modal-overlay').remove()" style="width:100%; margin-top:10px; padding:10px; border-radius:25px;">Отмена</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function blockUser(targetUser) {
+            socket.emit('block user', targetUser);
+            document.querySelector('.modal-overlay')?.remove();
+            alert(`Пользователь ${targetUser} заблокирован`);
+        }
+        
+        function unblockUser(targetUser) {
+            socket.emit('unblock user', targetUser);
+            document.querySelector('.modal-overlay')?.remove();
+            alert(`Пользователь ${targetUser} разблокирован`);
+        }
+        
+        function deletePrivateChat(targetUser) {
+            if (confirm(`Удалить чат с ${targetUser}? Сообщения будут удалены безвозвратно.`)) {
+                socket.emit('delete chat', targetUser);
+                const index = chats.findIndex(c => c.id === targetUser && c.type === 'private');
+                if (index !== -1) {
+                    chats.splice(index, 1);
+                    updateChatsList();
+                }
+                localStorage.removeItem(`chat_private_${targetUser}`);
+                if (currentPrivateWith === targetUser) {
+                    switchToGeneral();
+                }
+                document.querySelector('.modal-overlay')?.remove();
+            }
         }
         
         function checkAndJoin() {
@@ -1452,6 +1534,7 @@
             chatHeaderStatus.textContent = `${allUsers.length} участников`;
             messagesArea.innerHTML = '';
             messagesMap.clear();
+            chatHeaderButtons.innerHTML = '';
             
             const savedMessages = JSON.parse(localStorage.getItem(`chat_general`) || '[]');
             savedMessages.forEach(msg => {
@@ -1479,6 +1562,13 @@
             chatHeaderStatus.textContent = 'личный чат';
             messagesArea.innerHTML = '';
             messagesMap.clear();
+            chatHeaderButtons.innerHTML = '';
+            
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'chat-menu-btn';
+            menuBtn.innerHTML = '⋯';
+            menuBtn.onclick = () => showPrivateChatMenu(username);
+            chatHeaderButtons.appendChild(menuBtn);
             
             const savedMessages = JSON.parse(localStorage.getItem(`chat_private_${username}`) || '[]');
             savedMessages.forEach(msg => {
@@ -1579,6 +1669,8 @@
                 }
                 if (!isPrivate) {
                     socket.emit('mark read', { messageId });
+                } else if (currentPrivateWith) {
+                    socket.emit('mark private read', { messageId, withUser: currentPrivateWith });
                 }
             }
         }
@@ -1621,7 +1713,7 @@
             
             let readStatusHtml = '';
             if (isOwn && data.type === 'text') {
-                const isRead = messageReadStatus.get(data.id);
+                const isRead = isPrivate ? data.read === true : messageReadStatus.get(data.id);
                 readStatusHtml = `<span class="read-status ${isRead ? 'read' : ''}">${isRead ? '✓✓' : '✓'}</span>`;
             }
             
@@ -1874,6 +1966,7 @@
         document.addEventListener('touchend', handleTouchEnd, false);
         document.addEventListener('click', closeSidebarOnOutside);
         
+        // Socket events
         socket.on('chat message', (data) => {
             if (currentChat === 'general') {
                 messagesMap.set(data.id, data);
@@ -1943,6 +2036,58 @@
             localStorage.removeItem('messenger_username');
         });
         
+        socket.on('blocked list', (list) => {
+            blockedUsersList = list;
+        });
+        
+        socket.on('user blocked', (user) => {
+            if (currentPrivateWith === user) {
+                alert(`${user} заблокировал вас`);
+                switchToGeneral();
+            }
+        });
+        
+        socket.on('blocked error', (message) => {
+            alert(message);
+        });
+        
+        socket.on('blocked info', (isBlocked) => {
+            if (isBlocked) {
+                chatHeaderStatus.textContent = '⛔ Вы заблокированы';
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
+                voiceBtn.disabled = true;
+            } else {
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                voiceBtn.disabled = false;
+                chatHeaderStatus.textContent = 'личный чат';
+            }
+        });
+        
+        socket.on('private message read', (data) => {
+            const msgDiv = document.querySelector(`.message-row[data-message-id="${data.messageId}"]`);
+            if (msgDiv && currentChat === 'private') {
+                const readSpan = msgDiv.querySelector('.read-status');
+                if (readSpan) {
+                    readSpan.textContent = '✓✓';
+                    readSpan.classList.add('read');
+                }
+            }
+        });
+        
+        socket.on('chat deleted', (targetUser) => {
+            const index = chats.findIndex(c => c.id === targetUser && c.type === 'private');
+            if (index !== -1) {
+                chats.splice(index, 1);
+                updateChatsList();
+            }
+            if (currentPrivateWith === targetUser) {
+                switchToGeneral();
+                alert(`Чат с ${targetUser} удалён`);
+            }
+        });
+        
         socket.on('message edited', (data) => {
             const msgDiv = document.querySelector(`.message-row[data-message-id="${data.id}"]`);
             if (msgDiv && currentChat === 'general') {
@@ -2005,6 +2150,10 @@
         window.showSearchUsersModal = showSearchUsersModal;
         window.startNewChat = startNewChat;
         window.checkAndJoin = checkAndJoin;
+        window.showPrivateChatMenu = showPrivateChatMenu;
+        window.blockUser = blockUser;
+        window.unblockUser = unblockUser;
+        window.deletePrivateChat = deletePrivateChat;
         window.changeNickname = () => {};
     </script>
 </body>
