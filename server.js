@@ -18,8 +18,9 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const connectedUsers = new Map();
+const connectedUsers = new Map(); // socket.id -> username
 const messageHistory = [];
+let activeCall = null; // { caller, callee, callerId, calleeId }
 
 io.on('connection', (socket) => {
   console.log('Новое подключение:', socket.id);
@@ -31,6 +32,7 @@ io.on('connection', (socket) => {
     
     username = username.trim();
     connectedUsers.set(socket.id, username);
+    socket.username = username;
     
     const allUsers = Array.from(connectedUsers.values());
     io.emit('users list', allUsers);
@@ -59,59 +61,101 @@ io.on('connection', (socket) => {
     io.emit('chat message', messageData);
   });
   
-  // ========== ЗВОНКИ ==========
+  // ========== ГОЛОСОВОЙ ЧАТ ЧЕРЕЗ СЕРВЕР ==========
   
-  socket.on('call user', (data) => {
-    const { targetUsername, callerUsername, offer } = data;
+  // Начать звонок
+  socket.on('start call', (data) => {
+    const { targetUsername } = data;
     
-    // Находим сокет собеседника
-    let targetSocketId = null;
+    // Находим собеседника
+    let targetId = null;
+    let targetName = null;
     for (const [id, name] of connectedUsers.entries()) {
       if (name === targetUsername) {
-        targetSocketId = id;
+        targetId = id;
+        targetName = name;
         break;
       }
     }
     
-    if (targetSocketId) {
-      // Сохраняем кто кому звонит
-      socket.callTarget = targetSocketId;
+    if (targetId && !activeCall) {
+      activeCall = {
+        caller: socket.username,
+        callee: targetName,
+        callerId: socket.id,
+        calleeId: targetId
+      };
       
-      io.to(targetSocketId).emit('incoming call', {
-        from: callerUsername,
-        fromId: socket.id,
-        offer: offer
+      // Уведомляем собеседника
+      io.to(targetId).emit('incoming call', {
+        from: socket.username,
+        fromId: socket.id
       });
       
-      console.log(`📞 ${callerUsername} звонит ${targetUsername}`);
+      socket.emit('call status', { status: 'waiting', message: 'Звоним...' });
+      console.log(`📞 ${socket.username} звонит ${targetName}`);
+    } else if (activeCall) {
+      socket.emit('call status', { status: 'busy', message: 'Кто-то уже разговаривает' });
     } else {
-      socket.emit('call error', 'Пользователь не в сети');
+      socket.emit('call status', { status: 'offline', message: 'Пользователь не в сети' });
     }
   });
   
-  socket.on('answer call', (data) => {
-    const { toId, answer } = data;
-    io.to(toId).emit('call answered', { answer: answer });
+  // Принять звонок
+  socket.on('accept call', () => {
+    if (activeCall && activeCall.calleeId === socket.id) {
+      // Уведомляем звонящего что можно говорить
+      io.to(activeCall.callerId).emit('call accepted');
+      socket.emit('call started');
+      
+      console.log(`✅ Звонок принят: ${activeCall.caller} <-> ${activeCall.callee}`);
+    }
   });
   
-  socket.on('ice candidate', (data) => {
-    const { toId, candidate } = data;
-    io.to(toId).emit('ice candidate', { candidate: candidate });
+  // Отклонить звонок
+  socket.on('reject call', () => {
+    if (activeCall && activeCall.calleeId === socket.id) {
+      io.to(activeCall.callerId).emit('call rejected');
+      activeCall = null;
+      console.log(`❌ Звонок отклонён`);
+    }
   });
   
-  socket.on('end call', (data) => {
-    const { toId } = data;
-    io.to(toId).emit('call ended');
+  // Передача голосовых данных (реальное время)
+  socket.on('voice data', (data) => {
+    if (activeCall) {
+      // Отправляем голос собеседнику
+      if (socket.id === activeCall.callerId && activeCall.calleeId) {
+        io.to(activeCall.calleeId).emit('voice data', data);
+      } else if (socket.id === activeCall.calleeId && activeCall.callerId) {
+        io.to(activeCall.callerId).emit('voice data', data);
+      }
+    }
   });
   
-  socket.on('reject call', (data) => {
-    const { toId } = data;
-    io.to(toId).emit('call rejected');
+  // Завершить звонок
+  socket.on('end call', () => {
+    if (activeCall) {
+      if (activeCall.callerId === socket.id) {
+        io.to(activeCall.calleeId).emit('call ended');
+      } else if (activeCall.calleeId === socket.id) {
+        io.to(activeCall.callerId).emit('call ended');
+      }
+      activeCall = null;
+      console.log(`🔴 Звонок завершён`);
+    }
   });
   
   socket.on('disconnect', () => {
     const username = connectedUsers.get(socket.id);
     if (username) {
+      // Если пользователь был в звонке - завершаем звонок
+      if (activeCall && (activeCall.callerId === socket.id || activeCall.calleeId === socket.id)) {
+        const otherId = activeCall.callerId === socket.id ? activeCall.calleeId : activeCall.callerId;
+        io.to(otherId).emit('call ended');
+        activeCall = null;
+      }
+      
       connectedUsers.delete(socket.id);
       
       const allUsers = Array.from(connectedUsers.values());

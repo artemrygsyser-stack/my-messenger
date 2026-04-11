@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мессенджер - Аудиозвонки</title>
+    <title>Мессенджер - Голосовой чат</title>
     <style>
         * {
             margin: 0;
@@ -244,7 +244,7 @@
             position: fixed;
             bottom: 30px;
             right: 30px;
-            width: 300px;
+            width: 320px;
             background: #2c3e50;
             border-radius: 15px;
             padding: 15px;
@@ -266,19 +266,46 @@
         }
         
         .call-status {
-            font-size: 14px;
+            font-size: 12px;
+            color: #f39c12;
+        }
+        
+        .call-status.talking {
             color: #2ecc71;
         }
         
-        .end-call-btn {
+        .talk-btn {
             background: #e74c3c;
             border: none;
             color: white;
-            padding: 8px 15px;
+            padding: 12px;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            transition: all 0.1s;
+        }
+        
+        .talk-btn:active {
+            transform: scale(0.97);
+            background: #c0392b;
+        }
+        
+        .talk-btn.muted {
+            background: #7f8c8d;
+        }
+        
+        .end-call-btn {
+            background: #95a5a6;
+            border: none;
+            color: white;
+            padding: 8px;
             border-radius: 20px;
             cursor: pointer;
             width: 100%;
-            font-size: 14px;
+            font-size: 12px;
         }
         
         .incoming-call {
@@ -324,15 +351,16 @@
             flex: 1;
         }
         
-        .mic-toggle {
+        .call-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
             background: #34495e;
-            border: none;
             color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            margin-top: 10px;
-            width: 100%;
+            padding: 10px 15px;
+            border-radius: 10px;
+            z-index: 2000;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -366,14 +394,16 @@
         </div>
     </div>
     
-    <!-- Окно активного звонка -->
+    <!-- Окно звонка -->
     <div id="call-window" class="call-window">
         <div class="call-header">
-            <span>📞 Звонок с <span id="call-with-name"></span></span>
+            <span>📞 Разговор с <span id="call-with-name"></span></span>
             <span class="call-status" id="call-status">⏳ Соединение...</span>
         </div>
-        <button class="mic-toggle" onclick="toggleMicrophone()">🎤 Выключить микрофон</button>
-        <button class="end-call-btn" onclick="hangUp()">🔴 Завершить звонок</button>
+        <button class="talk-btn" id="talk-btn" onmousedown="startTalking()" onmouseup="stopTalking()" onmouseleave="stopTalking()" ontouchstart="startTalking()" ontouchend="stopTalking()">
+            🎤 ГОВОРИТЬ (Удерживай)
+        </button>
+        <button class="end-call-btn" onclick="endCall()">🔴 Завершить звонок</button>
     </div>
     
     <!-- Входящий звонок -->
@@ -385,25 +415,19 @@
         </div>
     </div>
     
+    <div id="call-notification" class="call-notification" style="display: none;"></div>
+    
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         let currentUser = null;
-        let localStream = null;
-        let peerConnection = null;
-        let currentCallWith = null;
+        let mediaStream = null;
+        let mediaRecorder = null;
         let isInCall = false;
-        let pendingCallFrom = null;
-        let pendingCallerId = null;
-        let pendingOffer = null;
-        
-        const configuration = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' }
-            ]
-        };
+        let currentCallWith = null;
+        let pendingCaller = null;
+        let audioContext = null;
+        let isTalking = false;
         
         // DOM элементы
         const loginOverlay = document.getElementById('login-overlay');
@@ -418,6 +442,8 @@
         const callerNameSpan = document.getElementById('caller-name');
         const callWithNameSpan = document.getElementById('call-with-name');
         const callStatusSpan = document.getElementById('call-status');
+        const talkBtn = document.getElementById('talk-btn');
+        const callNotification = document.getElementById('call-notification');
         
         // Сохранённое имя
         const savedName = localStorage.getItem('messenger_username');
@@ -495,186 +521,190 @@
         
         async function startCall(targetUsername) {
             if (isInCall) {
-                alert('У вас уже активен звонок');
+                showNotification('У вас уже активен звонок');
                 return;
             }
             
-            try {
-                // Получаем доступ к микрофону
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log('Микрофон получен');
-                
-                createPeerConnection();
-                
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                
-                currentCallWith = targetUsername;
-                isInCall = true;
-                
-                socket.emit('call user', {
-                    targetUsername: targetUsername,
-                    callerUsername: currentUser,
-                    offer: offer
-                });
-                
-                callWithNameSpan.textContent = targetUsername;
-                callStatusSpan.textContent = '⏳ Звоним...';
-                callWindow.classList.add('active');
-                
-            } catch (err) {
-                console.error('Ошибка:', err);
-                alert('Не удалось получить доступ к микрофону');
-            }
+            currentCallWith = targetUsername;
+            callWithNameSpan.textContent = targetUsername;
+            callStatusSpan.textContent = '⏳ Звоним...';
+            callWindow.classList.add('active');
+            
+            socket.emit('start call', { targetUsername: targetUsername });
         }
         
-        function createPeerConnection() {
-            peerConnection = new RTCPeerConnection(configuration);
-            
-            // Получаем аудио от собеседника
-            peerConnection.ontrack = (event) => {
-                console.log('Получен аудио поток');
-                const remoteAudio = new Audio();
-                remoteAudio.srcObject = event.streams[0];
-                remoteAudio.autoplay = true;
-                remoteAudio.play();
-                callStatusSpan.textContent = '🔴 В разговоре';
-            };
-            
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate && currentCallWith) {
-                    socket.emit('ice candidate', {
-                        toId: currentCallWith,
-                        candidate: event.candidate
-                    });
-                }
-            };
-            
-            peerConnection.oniceconnectionstatechange = () => {
-                console.log('ICE состояние:', peerConnection.iceConnectionState);
-                if (peerConnection.iceConnectionState === 'connected') {
-                    callStatusSpan.textContent = '🔴 В разговоре';
-                } else if (peerConnection.iceConnectionState === 'failed') {
-                    hangUp();
-                    alert('Соединение потеряно');
-                }
-            };
-            
-            // Добавляем свой микрофон
-            if (localStream) {
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-            }
-        }
-        
-        // Входящий звонок
-        socket.on('incoming call', (data) => {
-            if (isInCall) {
-                socket.emit('reject call', { toId: data.fromId });
-                return;
-            }
-            
-            pendingCallFrom = data.from;
-            pendingCallerId = data.fromId;
-            pendingOffer = data.offer;
-            callerNameSpan.textContent = data.from;
-            incomingCallDiv.classList.add('active');
-        });
-        
-        async function acceptCall() {
+        function acceptCall() {
             incomingCallDiv.classList.remove('active');
-            
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log('Микрофон получен для ответа');
-                
-                createPeerConnection();
-                
-                await peerConnection.setRemoteDescription(pendingOffer);
-                
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                
-                currentCallWith = pendingCallerId;
-                isInCall = true;
-                
-                socket.emit('answer call', {
-                    toId: pendingCallerId,
-                    answer: answer
-                });
-                
-                callWithNameSpan.textContent = pendingCallFrom;
-                callStatusSpan.textContent = '⏳ Соединение...';
-                callWindow.classList.add('active');
-                
-            } catch (err) {
-                console.error('Ошибка ответа:', err);
-                alert('Не удалось получить доступ к микрофону');
-            }
+            startVoiceChat();
+            socket.emit('accept call');
+            callStatusSpan.textContent = '🎤 Нажми и удерживай "ГОВОРИТЬ"';
+            callStatusSpan.classList.add('talking');
         }
         
         function rejectCall() {
-            socket.emit('reject call', { toId: pendingCallerId });
+            socket.emit('reject call');
             incomingCallDiv.classList.remove('active');
-            pendingCallerId = null;
+            pendingCaller = null;
         }
         
-        socket.on('call answered', async (data) => {
-            if (peerConnection) {
-                await peerConnection.setRemoteDescription(data.answer);
-            }
-        });
+        function startVoiceChat() {
+            isInCall = true;
+            callWindow.classList.add('active');
+            talkBtn.disabled = false;
+            talkBtn.classList.remove('muted');
+        }
         
-        socket.on('ice candidate', async (data) => {
-            if (peerConnection) {
-                try {
-                    await peerConnection.addIceCandidate(data.candidate);
-                } catch (e) {
-                    console.log('ICE ошибка:', e);
+        async function initMicrophone() {
+            if (mediaStream) return;
+            
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('Микрофон готов');
+                
+                // Настраиваем воспроизведение входящего звука
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                source.connect(audioContext.destination);
+                
+            } catch (err) {
+                console.error('Ошибка микрофона:', err);
+                showNotification('Не удалось получить доступ к микрофону');
+            }
+        }
+        
+        function startTalking() {
+            if (!isInCall) return;
+            if (isTalking) return;
+            
+            isTalking = true;
+            talkBtn.textContent = '🔴 ГОВОРЮ... (Отпусти)';
+            talkBtn.style.background = '#e74c3c';
+            
+            // Начинаем запись и отправку голоса
+            if (mediaStream) {
+                if (mediaRecorder) {
+                    mediaRecorder.stop();
                 }
+                
+                const chunks = [];
+                mediaRecorder = new MediaRecorder(mediaStream);
+                
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        chunks.push(e.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    if (chunks.length > 0) {
+                        const blob = new Blob(chunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        reader.onloadend = () => {
+                            socket.emit('voice data', {
+                                audio: reader.result
+                            });
+                        };
+                    }
+                    chunks.length = 0;
+                };
+                
+                mediaRecorder.start(100); // Отправляем каждые 100ms
+                setTimeout(() => {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                    }
+                }, 150);
             }
-        });
+        }
         
-        socket.on('call ended', () => {
-            hangUp();
-        });
-        
-        socket.on('call rejected', () => {
-            alert('Звонок отклонён');
-            hangUp();
-        });
-        
-        function hangUp() {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
+        function stopTalking() {
+            if (!isInCall) return;
+            if (!isTalking) return;
             
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
-            }
+            isTalking = false;
+            talkBtn.textContent = '🎤 ГОВОРИТЬ (Удерживай)';
+            talkBtn.style.background = '#e74c3c';
             
-            if (isInCall && currentCallWith) {
-                socket.emit('end call', { toId: currentCallWith });
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
             }
+        }
+        
+        function endCall() {
+            socket.emit('end call');
+            cleanupCall();
+        }
+        
+        function cleanupCall() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+            mediaRecorder = null;
             
             callWindow.classList.remove('active');
             isInCall = false;
             currentCallWith = null;
+            isTalking = false;
+            talkBtn.textContent = '🎤 ГОВОРИТЬ (Удерживай)';
+            talkBtn.style.background = '#e74c3c';
         }
         
-        function toggleMicrophone() {
-            if (localStream) {
-                const audioTrack = localStream.getAudioTracks()[0];
-                if (audioTrack) {
-                    audioTrack.enabled = !audioTrack.enabled;
-                    const btn = document.querySelector('.mic-toggle');
-                    btn.textContent = audioTrack.enabled ? '🎤 Выключить микрофон' : '🎙️ Включить микрофон';
-                }
-            }
+        function showNotification(msg) {
+            callNotification.textContent = msg;
+            callNotification.style.display = 'block';
+            setTimeout(() => {
+                callNotification.style.display = 'none';
+            }, 3000);
         }
+        
+        // ========== СОБЫТИЯ СОКЕТА ==========
+        
+        socket.on('call status', (data) => {
+            if (data.status === 'offline') {
+                showNotification(data.message);
+                cleanupCall();
+            } else if (data.status === 'busy') {
+                showNotification(data.message);
+                cleanupCall();
+            } else if (data.status === 'waiting') {
+                callStatusSpan.textContent = '📞 Звоним...';
+            }
+        });
+        
+        socket.on('incoming call', (data) => {
+            if (isInCall) {
+                socket.emit('reject call');
+                return;
+            }
+            
+            pendingCaller = data.from;
+            callerNameSpan.textContent = data.from;
+            incomingCallDiv.classList.add('active');
+        });
+        
+        socket.on('call accepted', async () => {
+            await initMicrophone();
+            startVoiceChat();
+            callStatusSpan.textContent = '🎤 Нажми и удерживай "ГОВОРИТЬ"';
+            callStatusSpan.classList.add('talking');
+        });
+        
+        socket.on('call rejected', () => {
+            showNotification('Звонок отклонён');
+            cleanupCall();
+        });
+        
+        socket.on('call ended', () => {
+            showNotification('Звонок завершён');
+            cleanupCall();
+        });
+        
+        socket.on('voice data', (data) => {
+            // Воспроизводим полученный голос
+            const audio = new Audio(data.audio);
+            audio.play().catch(e => console.log('Audio play error:', e));
+        });
         
         // ========== ЧАТ ==========
         
@@ -732,6 +762,9 @@
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 100) + 'px';
         });
+        
+        // Инициализация микрофона при входе
+        initMicrophone();
     </script>
 </body>
 </html>
