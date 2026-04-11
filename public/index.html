@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мессенджер - Голосовой чат</title>
+    <title>Мессенджер - Голосовые и фото</title>
     <style>
         * {
             margin: 0;
@@ -67,41 +67,18 @@
             background: #34495e;
             border-radius: 8px;
             font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
         }
         
         .user-name {
             display: flex;
             align-items: center;
             gap: 8px;
-            flex: 1;
         }
         
         .user-name::before {
             content: "●";
             color: #2ecc71;
             font-size: 10px;
-        }
-        
-        .call-btn {
-            background: #27ae60;
-            border: none;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        .call-btn:hover {
-            background: #2ecc71;
-        }
-        
-        .call-btn.in-call {
-            background: #e74c3c;
         }
         
         .chat-main {
@@ -170,10 +147,55 @@
             margin-top: 4px;
         }
         
+        /* Голосовое сообщение */
+        .voice-message {
+            background: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .voice-message:hover {
+            background: #5a67d8;
+        }
+        
+        .voice-message.remote {
+            background: white;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        /* Изображение */
+        .message-image {
+            max-width: 250px;
+            max-height: 250px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        
+        .image-caption {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
         .input-area {
             padding: 20px;
             background: white;
             border-top: 1px solid #dee2e6;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .message-input-wrapper {
+            flex: 1;
             display: flex;
             gap: 10px;
         }
@@ -188,14 +210,46 @@
             font-family: inherit;
         }
         
-        #send-btn {
-            padding: 12px 24px;
+        button {
+            padding: 12px 20px;
             background: #667eea;
             color: white;
             border: none;
             border-radius: 25px;
             cursor: pointer;
             font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        .voice-btn {
+            background: #e74c3c;
+        }
+        
+        .voice-btn:hover {
+            background: #c0392b;
+        }
+        
+        .voice-btn.recording {
+            background: #27ae60;
+            animation: pulse 0.5s infinite;
+        }
+        
+        .image-btn {
+            background: #3498db;
+        }
+        
+        .image-btn:hover {
+            background: #2980b9;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         
         .login-overlay {
@@ -239,128 +293,48 @@
             font-size: 16px;
         }
         
-        /* Окно звонка */
-        .call-window {
+        .recording-hint {
             position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 320px;
-            background: #2c3e50;
-            border-radius: 15px;
-            padding: 15px;
-            color: white;
-            z-index: 2000;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            display: none;
-        }
-        
-        .call-window.active {
-            display: block;
-        }
-        
-        .call-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .call-status {
-            font-size: 12px;
-            color: #f39c12;
-        }
-        
-        .call-status.talking {
-            color: #2ecc71;
-        }
-        
-        .talk-btn {
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
             background: #e74c3c;
-            border: none;
             color: white;
-            padding: 12px;
+            padding: 10px 20px;
             border-radius: 50px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            transition: all 0.1s;
-        }
-        
-        .talk-btn:active {
-            transform: scale(0.97);
-            background: #c0392b;
-        }
-        
-        .talk-btn.muted {
-            background: #7f8c8d;
-        }
-        
-        .end-call-btn {
-            background: #95a5a6;
-            border: none;
-            color: white;
-            padding: 8px;
-            border-radius: 20px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 12px;
-        }
-        
-        .incoming-call {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 280px;
-            background: #2c3e50;
-            border-radius: 15px;
-            padding: 15px;
-            color: white;
             z-index: 2000;
-            display: none;
+            font-size: 14px;
+            animation: pulse 0.5s infinite;
         }
         
-        .incoming-call.active {
-            display: block;
-        }
-        
-        .incoming-buttons {
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
             display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .accept-btn {
-            background: #27ae60;
-            border: none;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
             cursor: pointer;
-            flex: 1;
         }
         
-        .reject-btn {
-            background: #e74c3c;
-            border: none;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            flex: 1;
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
         }
         
-        .call-notification {
-            position: fixed;
-            bottom: 30px;
-            left: 30px;
-            background: #34495e;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 10px;
-            z-index: 2000;
-            font-size: 12px;
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            button {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -388,46 +362,30 @@
             </div>
             <div class="messages-area" id="messages-area"></div>
             <div class="input-area">
-                <textarea id="message-input" placeholder="Введите сообщение..." rows="1"></textarea>
-                <button id="send-btn">Отправить</button>
+                <div class="message-input-wrapper">
+                    <textarea id="message-input" placeholder="Введите сообщение..." rows="1"></textarea>
+                    <button id="send-btn">Отправить</button>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="voice-btn" class="voice-btn" onmousedown="startRecording()" onmouseup="stopRecording()" onmouseleave="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()">🎤</button>
+                    <button id="image-btn" class="image-btn" onclick="document.getElementById('image-input').click()">📷</button>
+                    <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="sendImage(this)">
+                </div>
             </div>
         </div>
     </div>
     
-    <!-- Окно звонка -->
-    <div id="call-window" class="call-window">
-        <div class="call-header">
-            <span>📞 Разговор с <span id="call-with-name"></span></span>
-            <span class="call-status" id="call-status">⏳ Соединение...</span>
-        </div>
-        <button class="talk-btn" id="talk-btn" onmousedown="startTalking()" onmouseup="stopTalking()" onmouseleave="stopTalking()" ontouchstart="startTalking()" ontouchend="stopTalking()">
-            🎤 ГОВОРИТЬ (Удерживай)
-        </button>
-        <button class="end-call-btn" onclick="endCall()">🔴 Завершить звонок</button>
+    <div id="recording-hint" class="recording-hint" style="display: none;">
+        🎙️ Запись... Отпустите кнопку для отправки
     </div>
-    
-    <!-- Входящий звонок -->
-    <div id="incoming-call" class="incoming-call">
-        <div>📞 <span id="caller-name"></span> звонит вам...</div>
-        <div class="incoming-buttons">
-            <button class="accept-btn" onclick="acceptCall()">Ответить</button>
-            <button class="reject-btn" onclick="rejectCall()">Отклонить</button>
-        </div>
-    </div>
-    
-    <div id="call-notification" class="call-notification" style="display: none;"></div>
     
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         let currentUser = null;
-        let mediaStream = null;
         let mediaRecorder = null;
-        let isInCall = false;
-        let currentCallWith = null;
-        let pendingCaller = null;
-        let audioContext = null;
-        let isTalking = false;
+        let audioChunks = [];
+        let isRecording = false;
         
         // DOM элементы
         const loginOverlay = document.getElementById('login-overlay');
@@ -437,13 +395,8 @@
         const messageInput = document.getElementById('message-input');
         const sendBtn = document.getElementById('send-btn');
         const onlineCountSpan = document.getElementById('online-count');
-        const callWindow = document.getElementById('call-window');
-        const incomingCallDiv = document.getElementById('incoming-call');
-        const callerNameSpan = document.getElementById('caller-name');
-        const callWithNameSpan = document.getElementById('call-with-name');
-        const callStatusSpan = document.getElementById('call-status');
-        const talkBtn = document.getElementById('talk-btn');
-        const callNotification = document.getElementById('call-notification');
+        const recordingHint = document.getElementById('recording-hint');
+        const voiceBtn = document.getElementById('voice-btn');
         
         // Сохранённое имя
         const savedName = localStorage.getItem('messenger_username');
@@ -476,11 +429,34 @@
                 messageDiv.innerHTML = `<div class="message-bubble">${data}</div>`;
             } else {
                 const isCurrentUser = data.username === currentUser;
-                messageDiv.innerHTML = `
-                    <div class="message-bubble" style="${isCurrentUser ? 'background: #667eea; color: white; margin-left: auto;' : 'background: white;'}">
-                        ${!isCurrentUser ? `<div class="message-username">${data.username}</div>` : ''}
+                const bubbleStyle = isCurrentUser ? 'background: #667eea; color: white; margin-left: auto;' : 'background: white;';
+                
+                let content = '';
+                
+                if (data.type === 'text') {
+                    content = `
                         <div class="message-text">${escapeHtml(data.message)}</div>
                         <div class="message-time">${data.time}</div>
+                    `;
+                } else if (data.type === 'voice') {
+                    content = `
+                        <div class="voice-message" onclick="playVoice('${data.audio}')">
+                            🔊 Голосовое сообщение (${Math.round(data.duration)} сек)
+                        </div>
+                        <div class="message-time">${data.time}</div>
+                    `;
+                } else if (data.type === 'image') {
+                    content = `
+                        <img class="message-image" src="${data.image}" onclick="showImage('${data.image}')" alt="Изображение">
+                        ${data.caption ? `<div class="image-caption">${escapeHtml(data.caption)}</div>` : ''}
+                        <div class="message-time">${data.time}</div>
+                    `;
+                }
+                
+                messageDiv.innerHTML = `
+                    <div class="message-bubble" style="${bubbleStyle}">
+                        ${!isCurrentUser ? `<div class="message-username">${data.username}</div>` : ''}
+                        ${content}
                     </div>
                 `;
             }
@@ -495,218 +471,101 @@
             return div.innerHTML;
         }
         
+        function playVoice(audioData) {
+            const audio = new Audio(audioData);
+            audio.play();
+        }
+        
+        function showImage(src) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `<img src="${src}">`;
+            modal.onclick = () => modal.remove();
+            document.body.appendChild(modal);
+        }
+        
         function updateUsersList(users) {
             usersList.innerHTML = '';
             onlineCountSpan.textContent = `${users.length} человек`;
             
             users.forEach(user => {
-                if (user !== currentUser) {
-                    const userDiv = document.createElement('div');
-                    userDiv.className = 'user-item';
-                    userDiv.innerHTML = `
-                        <div class="user-name">${user}</div>
-                        <button class="call-btn" onclick="startCall('${user}')">📞 Позвонить</button>
-                    `;
-                    usersList.appendChild(userDiv);
-                } else {
-                    const userDiv = document.createElement('div');
-                    userDiv.className = 'user-item';
-                    userDiv.innerHTML = `<div class="user-name">${user} (Вы)</div>`;
-                    usersList.appendChild(userDiv);
-                }
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user-item';
+                userDiv.innerHTML = `<div class="user-name">${user} ${user === currentUser ? '(Вы)' : ''}</div>`;
+                usersList.appendChild(userDiv);
             });
         }
         
-        // ========== ЗВОНКИ ==========
+        // ========== ГОЛОСОВЫЕ СООБЩЕНИЯ ==========
         
-        async function startCall(targetUsername) {
-            if (isInCall) {
-                showNotification('У вас уже активен звонок');
-                return;
-            }
-            
-            currentCallWith = targetUsername;
-            callWithNameSpan.textContent = targetUsername;
-            callStatusSpan.textContent = '⏳ Звоним...';
-            callWindow.classList.add('active');
-            
-            socket.emit('start call', { targetUsername: targetUsername });
-        }
-        
-        function acceptCall() {
-            incomingCallDiv.classList.remove('active');
-            startVoiceChat();
-            socket.emit('accept call');
-            callStatusSpan.textContent = '🎤 Нажми и удерживай "ГОВОРИТЬ"';
-            callStatusSpan.classList.add('talking');
-        }
-        
-        function rejectCall() {
-            socket.emit('reject call');
-            incomingCallDiv.classList.remove('active');
-            pendingCaller = null;
-        }
-        
-        function startVoiceChat() {
-            isInCall = true;
-            callWindow.classList.add('active');
-            talkBtn.disabled = false;
-            talkBtn.classList.remove('muted');
-        }
-        
-        async function initMicrophone() {
-            if (mediaStream) return;
+        async function startRecording() {
+            if (isRecording) return;
             
             try {
-                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log('Микрофон готов');
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
                 
-                // Настраиваем воспроизведение входящего звука
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioContext.createMediaStreamSource(mediaStream);
-                source.connect(audioContext.destination);
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        const duration = audioChunks.reduce((acc, chunk) => acc + chunk.size, 0) / 16000;
+                        socket.emit('voice message', {
+                            username: currentUser,
+                            audio: reader.result,
+                            duration: duration
+                        });
+                    };
+                    
+                    stream.getTracks().forEach(track => track.stop());
+                    isRecording = false;
+                    recordingHint.style.display = 'none';
+                    voiceBtn.classList.remove('recording');
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                recordingHint.style.display = 'flex';
+                voiceBtn.classList.add('recording');
                 
             } catch (err) {
                 console.error('Ошибка микрофона:', err);
-                showNotification('Не удалось получить доступ к микрофону');
+                alert('Не удалось получить доступ к микрофону');
             }
         }
         
-        function startTalking() {
-            if (!isInCall) return;
-            if (isTalking) return;
-            
-            isTalking = true;
-            talkBtn.textContent = '🔴 ГОВОРЮ... (Отпусти)';
-            talkBtn.style.background = '#e74c3c';
-            
-            // Начинаем запись и отправку голоса
-            if (mediaStream) {
-                if (mediaRecorder) {
-                    mediaRecorder.stop();
-                }
-                
-                const chunks = [];
-                mediaRecorder = new MediaRecorder(mediaStream);
-                
-                mediaRecorder.ondataavailable = (e) => {
-                    if (e.data.size > 0) {
-                        chunks.push(e.data);
-                    }
-                };
-                
-                mediaRecorder.onstop = () => {
-                    if (chunks.length > 0) {
-                        const blob = new Blob(chunks, { type: 'audio/webm' });
-                        const reader = new FileReader();
-                        reader.readAsDataURL(blob);
-                        reader.onloadend = () => {
-                            socket.emit('voice data', {
-                                audio: reader.result
-                            });
-                        };
-                    }
-                    chunks.length = 0;
-                };
-                
-                mediaRecorder.start(100); // Отправляем каждые 100ms
-                setTimeout(() => {
-                    if (mediaRecorder && mediaRecorder.state === 'recording') {
-                        mediaRecorder.stop();
-                    }
-                }, 150);
-            }
-        }
-        
-        function stopTalking() {
-            if (!isInCall) return;
-            if (!isTalking) return;
-            
-            isTalking = false;
-            talkBtn.textContent = '🎤 ГОВОРИТЬ (Удерживай)';
-            talkBtn.style.background = '#e74c3c';
-            
+        function stopRecording() {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 mediaRecorder.stop();
             }
         }
         
-        function endCall() {
-            socket.emit('end call');
-            cleanupCall();
-        }
+        // ========== ФОТО ==========
         
-        function cleanupCall() {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-            }
-            mediaRecorder = null;
+        function sendImage(input) {
+            const file = input.files[0];
+            if (!file) return;
             
-            callWindow.classList.remove('active');
-            isInCall = false;
-            currentCallWith = null;
-            isTalking = false;
-            talkBtn.textContent = '🎤 ГОВОРИТЬ (Удерживай)';
-            talkBtn.style.background = '#e74c3c';
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = () => {
+                const caption = prompt('Подпись к фото (необязательно):', '');
+                socket.emit('image message', {
+                    username: currentUser,
+                    image: reader.result,
+                    caption: caption || ''
+                });
+                input.value = '';
+            };
         }
         
-        function showNotification(msg) {
-            callNotification.textContent = msg;
-            callNotification.style.display = 'block';
-            setTimeout(() => {
-                callNotification.style.display = 'none';
-            }, 3000);
-        }
-        
-        // ========== СОБЫТИЯ СОКЕТА ==========
-        
-        socket.on('call status', (data) => {
-            if (data.status === 'offline') {
-                showNotification(data.message);
-                cleanupCall();
-            } else if (data.status === 'busy') {
-                showNotification(data.message);
-                cleanupCall();
-            } else if (data.status === 'waiting') {
-                callStatusSpan.textContent = '📞 Звоним...';
-            }
-        });
-        
-        socket.on('incoming call', (data) => {
-            if (isInCall) {
-                socket.emit('reject call');
-                return;
-            }
-            
-            pendingCaller = data.from;
-            callerNameSpan.textContent = data.from;
-            incomingCallDiv.classList.add('active');
-        });
-        
-        socket.on('call accepted', async () => {
-            await initMicrophone();
-            startVoiceChat();
-            callStatusSpan.textContent = '🎤 Нажми и удерживай "ГОВОРИТЬ"';
-            callStatusSpan.classList.add('talking');
-        });
-        
-        socket.on('call rejected', () => {
-            showNotification('Звонок отклонён');
-            cleanupCall();
-        });
-        
-        socket.on('call ended', () => {
-            showNotification('Звонок завершён');
-            cleanupCall();
-        });
-        
-        socket.on('voice data', (data) => {
-            // Воспроизводим полученный голос
-            const audio = new Audio(data.audio);
-            audio.play().catch(e => console.log('Audio play error:', e));
-        });
-        
-        // ========== ЧАТ ==========
+        // ========== СОБЫТИЯ ==========
         
         socket.on('chat history', (messages) => {
             messagesArea.innerHTML = '';
@@ -716,6 +575,11 @@
         socket.on('chat message', (data) => {
             if (data.username !== currentUser) {
                 addMessage(data);
+            } else {
+                // Для своих сообщений тоже показываем (кроме тех что уже показаны)
+                if (data.type === 'voice' || data.type === 'image') {
+                    addMessage(data);
+                }
             }
         });
         
@@ -741,6 +605,7 @@
             });
             
             addMessage({
+                type: 'text',
                 username: currentUser,
                 message: message,
                 time: new Date().toLocaleTimeString()
@@ -762,9 +627,6 @@
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 100) + 'px';
         });
-        
-        // Инициализация микрофона при входе
-        initMicrophone();
     </script>
 </body>
 </html>
