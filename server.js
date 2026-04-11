@@ -20,6 +20,7 @@ app.get('/', (req, res) => {
 
 const connectedUsers = new Map();
 const messageHistory = [];
+let messageId = 0;
 
 io.on('connection', (socket) => {
   console.log('Новое подключение:', socket.id);
@@ -48,11 +49,14 @@ io.on('connection', (socket) => {
   socket.on('chat message', (data) => {
     if (!data.username || !data.message) return;
     
+    messageId++;
     const time = new Date().toLocaleTimeString();
     const messageData = {
+      id: messageId,
       type: 'text',
       username: data.username,
       message: data.message,
+      replyTo: data.replyTo || null,
       time: time
     };
     
@@ -66,12 +70,15 @@ io.on('connection', (socket) => {
   socket.on('voice message', (data) => {
     if (!data.username || !data.audio) return;
     
+    messageId++;
     const time = new Date().toLocaleTimeString();
     const messageData = {
+      id: messageId,
       type: 'voice',
       username: data.username,
       audio: data.audio,
       duration: data.duration,
+      replyTo: data.replyTo || null,
       time: time
     };
     
@@ -85,12 +92,15 @@ io.on('connection', (socket) => {
   socket.on('image message', (data) => {
     if (!data.username || !data.image) return;
     
+    messageId++;
     const time = new Date().toLocaleTimeString();
     const messageData = {
+      id: messageId,
       type: 'image',
       username: data.username,
       image: data.image,
       caption: data.caption || '',
+      replyTo: data.replyTo || null,
       time: time
     };
     
